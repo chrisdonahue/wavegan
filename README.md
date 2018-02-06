@@ -45,7 +45,7 @@ python data/make_tfrecord \
 To begin (or resume) training
 
 ```
-python train.py train ./train --data_dir ./data/customdataset \
+python train_wavegan.py train ./train --data_dir ./data/customdataset \
 	--wavegan_genr_pp \
 	--wavegan_disc_phaseshuffle 2
 ```
@@ -56,14 +56,14 @@ To run a script that will dump a preview of fixed latent vectors at each checkpo
 
 ```
 export CUDA_VISIBLE_DEVICES="-1"
-python train.py preview ./train
+python train_wavegan.py preview ./train
 ```
 
 To run a (slow) script that will calculate inception score for the SC09 dataset at each checkpoint
 
 ```
 export CUDA_VISIBLE_DEVICES="-1"
-python train.py incept ./train
+python train_wavegan.py incept ./train
 ```
 
 ## Attribution
