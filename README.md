@@ -10,7 +10,7 @@ TensorFlow implementation of WaveGAN (Redacted et al).
 
 WaveGAN is a GAN approach designed for operation on raw, time-domain audio samples. It is analogous to the DCGAN approach (Radford et al. 2016). The model uses one-dimensional transposed convolutions with longer filters and larger stride than DCGAN, as shown in the figure above.
 
-## Use
+## Usage
 
 ### Requirements
 
@@ -45,8 +45,12 @@ python data/make_tfrecord \
 To begin (or resume) training
 
 ```
-python train.py train ./train --data_dir ./data/customdataset
+python train.py train ./train --data_dir ./data/customdataset \
+	--wavegan_genr_pp \
+	--wavegan_disc_phaseshuffle 2
 ```
+
+If your results sound muffled or otherwise strange, try removing `--wavegan_genr_pp` or setting `--wavegan_disc_phaseshuffle 0`. 
 
 To run a script that will dump a preview of fixed latent vectors at each checkpoint on the CPU
 
@@ -61,3 +65,7 @@ To run a (slow) script that will calculate inception score for the SC09 dataset 
 export CUDA_VISIBLE_DEVICES="-1"
 python train.py incept ./train
 ```
+
+## Attribution
+
+Redacted for blind review
