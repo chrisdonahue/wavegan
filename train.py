@@ -607,8 +607,8 @@ if __name__ == '__main__':
     train_save_secs=300,
     train_summary_secs=120,
     preview_n=32,
-    incept_metagraph_fp=None,
-    incept_ckpt_fp=None,
+    incept_metagraph_fp='./eval/inception/infer.meta',
+    incept_ckpt_fp='./eval/inception/best_acc-103005',
     incept_n=5000,
     incept_k=10)
 

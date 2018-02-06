@@ -28,7 +28,7 @@ if __name__  == '__main__':
 
   parser.set_defaults(
       name='examples',
-      ext='audio',
+      ext='wav',
       fs=16000,
       nshards=1,
       slice_len=None,
