@@ -1,0 +1,4 @@
+*.sh
+*.pyc
+*.ipynb_checkpoints
+train
