@@ -145,7 +145,7 @@ def WaveGANDiscriminator(
     batchnorm = lambda x: x
 
   if phaseshuffle_rad > 0:
-    phaseshuffle = lambda x: apply_phaseshuffle(x, phaseshuffle_rad, phaseshuffle_pad_type)
+    phaseshuffle = lambda x: phaseshuffle(x, phaseshuffle_rad, phaseshuffle_pad_type)
   else:
     phaseshuffle = lambda x: x
 
