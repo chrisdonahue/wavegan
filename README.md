@@ -3,7 +3,7 @@
 <img src="static/results.png"/>
 <img src="static/wavegan.png"/>
 
-TensorFlow implementation of WaveGAN (Donahue et al. 2018). WaveGAN is a GAN approach designed for operation on raw, time-domain audio samples. It is analogous to the DCGAN approach (Radford et al. 2016). The model uses one-dimensional transposed convolutions with longer filters and larger stride than DCGAN, as shown in the figure above.
+TensorFlow implementation of WaveGAN (Donahue et al. 2018). WaveGAN is a GAN approach designed for operation on raw, time-domain audio samples. It is related to the DCGAN approach (Radford et al. 2016), a popular GAN model designed for image synthesis. WaveGAN uses one-dimensional transposed convolutions with longer filters and larger stride than DCGAN, as shown in the figure above.
 
 ## Usage
 
