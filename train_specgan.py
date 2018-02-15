@@ -6,7 +6,7 @@ import numpy as np
 import tensorflow as tf
 
 import loader
-from wavegan import WaveGANGenerator, WaveGANDiscriminator
+from specgan import SpecGANGenerator, SpecGANDiscriminator
 
 
 """
@@ -15,24 +15,99 @@ from wavegan import WaveGANGenerator, WaveGANDiscriminator
 _FS = 16000
 _WINDOW_LEN = 16384
 _D_Z = 100
+_CLIP_NSTD = 3.
+_LOG_EPS = 1e-6
 
 
 """
-  Trains a WaveGAN
+  Convert raw audio to spectrogram
+"""
+def t_to_f(x, X_mean, X_std):
+  x = x[:, :, 0]
+  X = tf.contrib.signal.stft(x, 256, 128, pad_end=True)
+  X = X[:, :, :-1]
+
+  X_mag = tf.abs(X)
+  X_lmag = tf.log(X_mag + _LOG_EPS)
+  X_norm = (X_lmag - X_mean[:-1]) / X_std[:-1]
+  X_norm /= _CLIP_NSTD
+  X_norm = tf.clip_by_value(X_norm, -1., 1.)
+  X_norm = tf.expand_dims(X_norm, axis=3)
+
+  X_norm = tf.stop_gradient(X_norm)
+
+  return X_norm
+
+
+"""
+  Griffin-Lim
+"""
+def invert_spectra_griffin_lim(X_mag, nfft, nhop, ngl):
+    X = tf.complex(X_mag, tf.zeros_like(X_mag))
+
+    def b(i, X_best):
+        x = tf.contrib.signal.inverse_stft(X_best, nfft, nhop)
+        X_est = tf.contrib.signal.stft(x, nfft, nhop)
+        phase = X_est / tf.cast(tf.maximum(1e-8, tf.abs(X_est)), tf.complex64)
+        X_best = X * phase
+        return i + 1, X_best
+
+    i = tf.constant(0)
+    c = lambda i, _: tf.less(i, ngl)
+    _, X = tf.while_loop(c, b, [i, X], back_prop=False)
+
+    x = tf.contrib.signal.inverse_stft(X, nfft, nhop)
+    x = x[:, :_WINDOW_LEN]
+
+    return x
+
+
+"""
+  Estimate raw audio for spectrogram
+"""
+def f_to_t(X_norm, X_mean, X_std, ngl=16):
+  X_norm = X_norm[:, :, :, 0]
+  X_norm = tf.pad(X_norm, [[0,0], [0,0], [0,1]])
+  X_norm *= _CLIP_NSTD
+  X_lmag = (X_norm * X_std) + X_mean
+  X_mag = tf.exp(X_lmag)
+
+  x = invert_spectra_griffin_lim(X_mag, 256, 128, ngl)
+
+  return x
+
+
+"""
+  Render normalized spectrogram as uint8 image
+"""
+def f_to_img(X_norm):
+  X_uint8 = X_norm + 1.
+  X_uint8 *= 128.
+  X_uint8 = tf.clip_by_value(X_uint8, 0., 255.)
+  X_uint8 = tf.cast(X_uint8, tf.uint8)
+
+  X_uint8 = tf.map_fn(lambda x: tf.image.rot90(x, 1), X_uint8)
+
+  return X_uint8
+
+
+"""
+  Trains a SpecGAN
 """
 def train(fps, args):
   with tf.name_scope('loader'):
-    x = loader.get_batch(fps, args.train_batch_size, _WINDOW_LEN, args.data_first_window)
+    x_wav = loader.get_batch(fps, args.train_batch_size, _WINDOW_LEN, args.data_first_window)
+    x = t_to_f(x_wav, args.mean, args.std)
 
   # Make z vector
   z = tf.random_uniform([args.train_batch_size, _D_Z], -1., 1., dtype=tf.float32)
 
   # Make generator
   with tf.variable_scope('G'):
-    G_z = WaveGANGenerator(z, train=True, **args.wavegan_g_kwargs)
-    if args.wavegan_genr_pp:
+    G_z = SpecGANGenerator(z, train=True, **args.specgan_g_kwargs)
+    if args.specgan_genr_pp:
       with tf.variable_scope('pp_filt'):
-        G_z = tf.layers.conv1d(G_z, 1, args.wavegan_genr_pp_len, use_bias=False, padding='same')
+        G_z = tf.layers.conv1d(G_z, 1, args.specgan_genr_pp_len, use_bias=False, padding='same')
   G_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='G')
 
   # Print G summary
@@ -47,8 +122,9 @@ def train(fps, args):
   print 'Total params: {} ({:.2f} MB)'.format(nparams, (float(nparams) * 4) / (1024 * 1024))
 
   # Summarize
-  tf.summary.audio('x', x, _FS)
-  tf.summary.audio('G_z', G_z, _FS)
+  tf.summary.audio('x_wav', x_wav, _FS)
+  tf.summary.audio('x', f_to_t(x), _FS)
+  tf.summary.audio('G_z', f_to_t(G_z), _FS)
   G_z_rms = tf.sqrt(tf.reduce_mean(tf.square(G_z[:, :, 0]), axis=1))
   x_rms = tf.sqrt(tf.reduce_mean(tf.square(x[:, :, 0]), axis=1))
   tf.summary.histogram('x_rms_batch', x_rms)
@@ -58,7 +134,7 @@ def train(fps, args):
 
   # Make real discriminator
   with tf.name_scope('D_x'), tf.variable_scope('D'):
-    D_x = WaveGANDiscriminator(x, **args.wavegan_d_kwargs)
+    D_x = SpecGANDiscriminator(x, **args.specgan_d_kwargs)
   D_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='D')
 
   # Print D summary
@@ -75,11 +151,11 @@ def train(fps, args):
 
   # Make fake discriminator
   with tf.name_scope('D_G_z'), tf.variable_scope('D', reuse=True):
-    D_G_z = WaveGANDiscriminator(G_z, **args.wavegan_d_kwargs)
+    D_G_z = SpecGANDiscriminator(G_z, **args.specgan_d_kwargs)
 
   # Create loss
   D_clip_weights = None
-  if args.wavegan_loss == 'dcgan':
+  if args.specgan_loss == 'dcgan':
     fake = tf.zeros([args.train_batch_size], dtype=tf.float32)
     real = tf.ones([args.train_batch_size], dtype=tf.float32)
 
@@ -98,12 +174,12 @@ def train(fps, args):
     ))
 
     D_loss /= 2.
-  elif args.wavegan_loss == 'lsgan':
+  elif args.specgan_loss == 'lsgan':
     G_loss = tf.reduce_mean((D_G_z - 1.) ** 2)
     D_loss = tf.reduce_mean((D_x - 1.) ** 2)
     D_loss += tf.reduce_mean(D_G_z ** 2)
     D_loss /= 2.
-  elif args.wavegan_loss == 'wgan':
+  elif args.specgan_loss == 'wgan':
     G_loss = -tf.reduce_mean(D_G_z)
     D_loss = tf.reduce_mean(D_G_z) - tf.reduce_mean(D_x)
 
@@ -118,7 +194,7 @@ def train(fps, args):
           )
         )
       D_clip_weights = tf.group(*clip_ops)
-  elif args.wavegan_loss == 'wgan-gp':
+  elif args.specgan_loss == 'wgan-gp':
     G_loss = -tf.reduce_mean(D_G_z)
     D_loss = tf.reduce_mean(D_G_z) - tf.reduce_mean(D_x)
 
@@ -126,7 +202,7 @@ def train(fps, args):
     differences = G_z - x
     interpolates = x + (alpha * differences)
     with tf.name_scope('D_interp'), tf.variable_scope('D', reuse=True):
-      D_interp = WaveGANDiscriminator(interpolates, **args.wavegan_d_kwargs)
+      D_interp = SpecGANDiscriminator(interpolates, **args.specgan_d_kwargs)
 
     LAMBDA = 10
     gradients = tf.gradients(D_interp, [interpolates])[0]
@@ -140,24 +216,24 @@ def train(fps, args):
   tf.summary.scalar('D_loss', D_loss)
 
   # Create (recommended) optimizer
-  if args.wavegan_loss == 'dcgan':
+  if args.specgan_loss == 'dcgan':
     G_opt = tf.train.AdamOptimizer(
         learning_rate=2e-4,
         beta1=0.5)
     D_opt = tf.train.AdamOptimizer(
         learning_rate=2e-4,
         beta1=0.5)
-  elif args.wavegan_loss == 'lsgan':
+  elif args.specgan_loss == 'lsgan':
     G_opt = tf.train.RMSPropOptimizer(
         learning_rate=1e-4)
     D_opt = tf.train.RMSPropOptimizer(
         learning_rate=1e-4)
-  elif args.wavegan_loss == 'wgan':
+  elif args.specgan_loss == 'wgan':
     G_opt = tf.train.RMSPropOptimizer(
         learning_rate=5e-5)
     D_opt = tf.train.RMSPropOptimizer(
         learning_rate=5e-5)
-  elif args.wavegan_loss == 'wgan-gp':
+  elif args.specgan_loss == 'wgan-gp':
     G_opt = tf.train.AdamOptimizer(
         learning_rate=1e-4,
         beta1=0.5,
@@ -181,7 +257,7 @@ def train(fps, args):
       save_summaries_secs=args.train_summary_secs) as sess:
     while True:
       # Train discriminator
-      for i in xrange(args.wavegan_disc_nupdates):
+      for i in xrange(args.specgan_disc_nupdates):
         sess.run(D_train_op)
 
         # Enforce Lipschitz constraint for WGAN
@@ -233,10 +309,10 @@ def infer(args):
 
   # Execute generator
   with tf.variable_scope('G'):
-    G_z = WaveGANGenerator(z, train=False, **args.wavegan_g_kwargs)
-    if args.wavegan_genr_pp:
+    G_z = SpecGANGenerator(z, train=False, **args.specgan_g_kwargs)
+    if args.specgan_genr_pp:
       with tf.variable_scope('pp_filt'):
-        G_z = tf.layers.conv1d(G_z, 1, args.wavegan_genr_pp_len, use_bias=False, padding='same')
+        G_z = tf.layers.conv1d(G_z, 1, args.specgan_genr_pp_len, use_bias=False, padding='same')
   G_z = tf.identity(G_z, name='G_z')
 
   # Flatten batch
@@ -318,7 +394,7 @@ def preview(args):
   fetches['step'] = tf.train.get_or_create_global_step()
   fetches['G_z'] = graph.get_tensor_by_name('G_z:0')
   fetches['G_z_flat_int16'] = graph.get_tensor_by_name('G_z_flat_int16:0')
-  if args.wavegan_genr_pp:
+  if args.specgan_genr_pp:
     fetches['pp_filter'] = graph.get_tensor_by_name('G/pp_filt/conv1d/kernel:0')[:, 0, 0]
 
   # Summarize
@@ -330,7 +406,7 @@ def preview(args):
   summary_writer = tf.summary.FileWriter(preview_dir)
 
   # PP Summarize
-  if args.wavegan_genr_pp:
+  if args.specgan_genr_pp:
     pp_fp = tf.placeholder(tf.string, [])
     pp_bin = tf.read_file(pp_fp)
     pp_png = tf.image.decode_png(pp_bin)
@@ -355,7 +431,7 @@ def preview(args):
 
       summary_writer.add_summary(_fetches['summaries'], _step)
 
-      if args.wavegan_genr_pp:
+      if args.specgan_genr_pp:
         w, h = freqz(_fetches['pp_filter'])
 
         fig = plt.figure()
@@ -495,6 +571,34 @@ def incept(args):
   incept_sess.close()
 
 
+"""
+  Calculates and saves dataset moments
+"""
+def moments(fps, args):
+  x = loader.get_batch(fps, 1, _WINDOW_LEN, args.data_first_window, repeat=False)[0]
+
+  X = tf.contrib.signal.stft(x, 256, 128, pad_end=True)
+  X_mag = tf.abs(X)
+  X_lmag = tf.log(X_mag + _LOG_EPS)
+
+  _X_lmags = []
+  with tf.Session() as sess:
+    i = 0
+    while True:
+      try:
+        _X_lmag = sess.run()
+      except:
+        break
+
+      _X_lmags.append(_X_lmag)
+
+  _X_lmags = np.concatenate(_X_lmags, axis=0)
+  mean, std = np.mean(_X_lmags, axis=0), np.std(_X_lmags, axis=0)
+
+  with open(args.data_moments_fp, 'wb') as f:
+    pickle.dump((mean, std), f)
+
+
 if __name__ == '__main__':
   import argparse
   import glob
@@ -502,7 +606,7 @@ if __name__ == '__main__':
 
   parser = argparse.ArgumentParser()
 
-  parser.add_argument('mode', type=str, choices=['train', 'preview', 'incept', 'infer'])
+  parser.add_argument('mode', type=str, choices=['moments', 'train', 'preview', 'incept', 'infer'])
   parser.add_argument('train_dir', type=str,
       help='Training directory')
 
@@ -511,26 +615,24 @@ if __name__ == '__main__':
       help='Data directory')
   data_args.add_argument('--data_first_window', action='store_true', dest='data_first_window',
       help='If set, only use the first window from each audio example')
+  data_args.add_argument('--data_moments_fp', type=str,
+      help='Dataset moments')
 
-  wavegan_args = parser.add_argument_group('WaveGAN')
-  wavegan_args.add_argument('--wavegan_kernel_len', type=int,
-      help='Length of 1D filter kernels')
-  wavegan_args.add_argument('--wavegan_dim', type=int,
+  specgan_args = parser.add_argument_group('SpecGAN')
+  specgan_args.add_argument('--specgan_kernel_len', type=int,
+      help='Length of square 2D filter kernels')
+  specgan_args.add_argument('--specgan_dim', type=int,
       help='Dimensionality multiplier for model of G and D')
-  wavegan_args.add_argument('--wavegan_batchnorm', action='store_true', dest='wavegan_batchnorm',
+  specgan_args.add_argument('--specgan_batchnorm', action='store_true', dest='specgan_batchnorm',
       help='Enable batchnorm')
-  wavegan_args.add_argument('--wavegan_disc_nupdates', type=int,
+  specgan_args.add_argument('--specgan_disc_nupdates', type=int,
       help='Number of discriminator updates per generator update')
-  wavegan_args.add_argument('--wavegan_loss', type=str, choices=['dcgan', 'lsgan', 'wgan', 'wgan-gp'],
+  specgan_args.add_argument('--specgan_loss', type=str, choices=['dcgan', 'lsgan', 'wgan', 'wgan-gp'],
       help='Which GAN loss to use')
-  wavegan_args.add_argument('--wavegan_genr_upsample', type=str, choices=['zeros', 'nn', 'lin', 'cub'],
+  specgan_args.add_argument('--specgan_genr_upsample', type=str, choices=['zeros', 'nn', 'lin', 'cub'],
       help='Generator upsample strategy')
-  wavegan_args.add_argument('--wavegan_genr_pp', action='store_true', dest='wavegan_genr_pp',
-      help='If set, use post-processing filter')
-  wavegan_args.add_argument('--wavegan_genr_pp_len', type=int,
-      help='Length of post-processing filter for DCGAN')
-  wavegan_args.add_argument('--wavegan_disc_phaseshuffle', type=int,
-      help='Radius of phase shuffle operation')
+  specgan_args.add_argument('--specgan_ngl', type=int,
+      help='Number of Griffin-Lim iterations')
 
   train_args = parser.add_argument_group('Train')
   train_args.add_argument('--train_batch_size', type=int,
@@ -557,15 +659,13 @@ if __name__ == '__main__':
   parser.set_defaults(
     data_dir=None,
     data_first_window=False,
-    wavegan_kernel_len=25,
-    wavegan_dim=64,
-    wavegan_batchnorm=False,
-    wavegan_disc_nupdates=5,
-    wavegan_loss='wgan-gp',
-    wavegan_genr_upsample='zeros',
-    wavegan_genr_pp=False,
-    wavegan_genr_pp_len=512,
-    wavegan_disc_phaseshuffle=0,
+    specgan_kernel_len=25,
+    specgan_dim=64,
+    specgan_batchnorm=False,
+    specgan_disc_nupdates=5,
+    specgan_loss='wgan-gp',
+    specgan_genr_upsample='zeros',
+    specgan_ngl=16,
     train_batch_size=64,
     train_save_secs=300,
     train_summary_secs=120,
@@ -586,17 +686,17 @@ if __name__ == '__main__':
     f.write('\n'.join([str(k) + ',' + str(v) for k, v in sorted(vars(args).items(), key=lambda x: x[0])]))
 
   # Make model kwarg dicts
-  setattr(args, 'wavegan_g_kwargs', {
-      'kernel_len': args.wavegan_kernel_len,
-      'dim': args.wavegan_dim,
-      'use_batchnorm': args.wavegan_batchnorm,
-      'upsample': args.wavegan_genr_upsample
+  setattr(args, 'specgan_g_kwargs', {
+      'kernel_len': args.specgan_kernel_len,
+      'dim': args.specgan_dim,
+      'use_batchnorm': args.specgan_batchnorm,
+      'upsample': args.specgan_genr_upsample
   })
-  setattr(args, 'wavegan_d_kwargs', {
-      'kernel_len': args.wavegan_kernel_len,
-      'dim': args.wavegan_dim,
-      'use_batchnorm': args.wavegan_batchnorm,
-      'phaseshuffle_rad': args.wavegan_disc_phaseshuffle
+  setattr(args, 'specgan_d_kwargs', {
+      'kernel_len': args.specgan_kernel_len,
+      'dim': args.specgan_dim,
+      'use_batchnorm': args.specgan_batchnorm,
+      'phaseshuffle_rad': args.specgan_disc_phaseshuffle
   })
 
   # Assign appropriate split for mode
