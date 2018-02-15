@@ -122,15 +122,19 @@ def train(fps, args):
   print 'Total params: {} ({:.2f} MB)'.format(nparams, (float(nparams) * 4) / (1024 * 1024))
 
   # Summarize
+  x_gl = f_to_t(x, args.data_moments_mean, args.data_moments_std, args.specgan_ngl)
+  G_z_gl = f_to_t(G_z, args.data_moments_mean, args.data_moments_std, args.specgan_ngl)
   tf.summary.audio('x_wav', x_wav, _FS)
-  tf.summary.audio('x', f_to_t(x), _FS)
-  tf.summary.audio('G_z', f_to_t(G_z), _FS)
-  G_z_rms = tf.sqrt(tf.reduce_mean(tf.square(G_z[:, :, 0]), axis=1))
-  x_rms = tf.sqrt(tf.reduce_mean(tf.square(x[:, :, 0]), axis=1))
+  tf.summary.audio('x', x_gl, _FS)
+  tf.summary.audio('G_z', G_z_gl, _FS)
+  G_z_rms = tf.sqrt(tf.reduce_mean(tf.square(G_z_gl[:, :, 0]), axis=1))
+  x_rms = tf.sqrt(tf.reduce_mean(tf.square(x_gl[:, :, 0]), axis=1))
   tf.summary.histogram('x_rms_batch', x_rms)
   tf.summary.histogram('G_z_rms_batch', G_z_rms)
   tf.summary.scalar('x_rms', tf.reduce_mean(x_rms))
   tf.summary.scalar('G_z_rms', tf.reduce_mean(G_z_rms))
+  tf.summary.image('x', f_to_img(x))
+  tf.summary.image('G_z', f_to_img(G_z))
 
   # Make real discriminator
   with tf.name_scope('D_x'), tf.variable_scope('D'):
@@ -198,7 +202,7 @@ def train(fps, args):
     G_loss = -tf.reduce_mean(D_G_z)
     D_loss = tf.reduce_mean(D_G_z) - tf.reduce_mean(D_x)
 
-    alpha = tf.random_uniform(shape=[args.train_batch_size, 1, 1], minval=0., maxval=1.)
+    alpha = tf.random_uniform(shape=[args.train_batch_size, 1, 1, 1], minval=0., maxval=1.)
     differences = G_z - x
     interpolates = x + (alpha * differences)
     with tf.name_scope('D_interp'), tf.variable_scope('D', reuse=True):
@@ -274,8 +278,11 @@ def train(fps, args):
     'samp_z_n' int32 []: Sample this many latent vectors
     'samp_z' float32 [samp_z_n, 100]: Resultant latent vectors
     'z:0' float32 [None, 100]: Input latent vectors
+    'ngl:0' int32 []: Number of Griffin-Lim iterations for resynthesis
     'flat_pad:0' int32 []: Number of padding samples to use when flattening batch to a single audio file
-    'G_z:0' float32 [None, 16384, 1]: Generated outputs
+    'G_z_norm:0' float32 [None, 128, 128, 1]: Generated outputs (frequency domain)
+    'G_z:0' float32 [None, 16384, 1]: Generated outputs (Griffin-Lim'd to time domain)
+    'G_z_norm_uint8:0' uint8 [None, 128, 128, 1]: Preview spectrogram image
     'G_z_int16:0' int16 [None, 16384, 1]: Same as above but quantizied to 16-bit PCM samples
     'G_z_flat:0' float32 [None, 1]: Outputs flattened into single audio file
     'G_z_flat_int16:0' int16 [None, 1]: Same as above but quantized to 16-bit PCM samples
@@ -305,6 +312,7 @@ def infer(args):
 
   # Input zo
   z = tf.placeholder(tf.float32, [None, _D_Z], name='z')
+  ngl = tf.placeholder(tf.int32, [], name='ngl')
   flat_pad = tf.placeholder(tf.int32, [], name='flat_pad')
 
   # Execute generator
@@ -313,7 +321,12 @@ def infer(args):
     if args.specgan_genr_pp:
       with tf.variable_scope('pp_filt'):
         G_z = tf.layers.conv1d(G_z, 1, args.specgan_genr_pp_len, use_bias=False, padding='same')
-  G_z = tf.identity(G_z, name='G_z')
+  G_z = tf.identity(G_z, name='G_z_norm')
+  G_z = f_to_t(G_z_norm, args.data_moments_mean, args.data_moments_std, ngl)
+  G_z = tf.reshape(G_z, [-1, 16384, 1], name='G_z')
+
+  G_z_norm_uint8 = f_to_img(G_z_norm)
+  G_z_norm_uint8 = tf.identity(G_z_norm_uint8, name='G_z_norm_uint8')
 
   # Flatten batch
   nch = int(G_z.get_shape()[-1])
@@ -352,9 +365,6 @@ def infer(args):
   Generates a preview audio file every time a checkpoint is saved
 """
 def preview(args):
-  import matplotlib
-  matplotlib.use('Agg')
-  import matplotlib.pyplot as plt
   from scipy.io.wavfile import write as wavwrite
   from scipy.signal import freqz
 
@@ -394,8 +404,6 @@ def preview(args):
   fetches['step'] = tf.train.get_or_create_global_step()
   fetches['G_z'] = graph.get_tensor_by_name('G_z:0')
   fetches['G_z_flat_int16'] = graph.get_tensor_by_name('G_z_flat_int16:0')
-  if args.specgan_genr_pp:
-    fetches['pp_filter'] = graph.get_tensor_by_name('G/pp_filt/conv1d/kernel:0')[:, 0, 0]
 
   # Summarize
   G_z = graph.get_tensor_by_name('G_z_flat:0')
@@ -404,13 +412,6 @@ def preview(args):
   ]
   fetches['summaries'] = tf.summary.merge(summaries)
   summary_writer = tf.summary.FileWriter(preview_dir)
-
-  # PP Summarize
-  if args.specgan_genr_pp:
-    pp_fp = tf.placeholder(tf.string, [])
-    pp_bin = tf.read_file(pp_fp)
-    pp_png = tf.image.decode_png(pp_bin)
-    pp_summary = tf.summary.image('pp_filt', tf.expand_dims(pp_png, axis=0))
 
   # Loop, waiting for checkpoints
   ckpt_fp = None
@@ -430,31 +431,6 @@ def preview(args):
       wavwrite(preview_fp, _FS, _fetches['G_z_flat_int16'])
 
       summary_writer.add_summary(_fetches['summaries'], _step)
-
-      if args.specgan_genr_pp:
-        w, h = freqz(_fetches['pp_filter'])
-
-        fig = plt.figure()
-        plt.title('Digital filter frequncy response')
-        ax1 = fig.add_subplot(111)
-
-	plt.plot(w, 20 * np.log10(abs(h)), 'b')
-	plt.ylabel('Amplitude [dB]', color='b')
-	plt.xlabel('Frequency [rad/sample]')
-
-	ax2 = ax1.twinx()
-	angles = np.unwrap(np.angle(h))
-	plt.plot(w, angles, 'g')
-	plt.ylabel('Angle (radians)', color='g')
-	plt.grid()
-	plt.axis('tight')
-
-        _pp_fp = os.path.join(preview_dir, '{}_ppfilt.png'.format(str(_step).zfill(8)))
-        plt.savefig(_pp_fp)
-
-        with tf.Session() as sess:
-          _summary = sess.run(pp_summary, {pp_fp: _pp_fp})
-          summary_writer.add_summary(_summary, _step)
 
       print 'Done'
 
@@ -684,6 +660,13 @@ if __name__ == '__main__':
   # Save args
   with open(os.path.join(args.train_dir, 'args.txt'), 'w') as f:
     f.write('\n'.join([str(k) + ',' + str(v) for k, v in sorted(vars(args).items(), key=lambda x: x[0])]))
+
+  # Load moments
+  if args.mode != 'moments' and args.data_moments_fp is not None:
+    with open(args.data_moments_fp, 'rb') as f:
+      _mean, _std = pickle.load(f)
+    setattr(args, 'data_moments_mean', _mean)
+    setattr(args, 'data_moments_std', _std)
 
   # Make model kwarg dicts
   setattr(args, 'specgan_g_kwargs', {
