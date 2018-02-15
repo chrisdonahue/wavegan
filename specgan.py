@@ -124,8 +124,7 @@ def SpecGANDiscriminator(
     x,
     kernel_len=5,
     dim=64,
-    use_batchnorm=False,
-    keep_prob=1.):
+    use_batchnorm=False):
   batch_size = tf.shape(x)[0]
 
   if use_batchnorm:
@@ -133,18 +132,12 @@ def SpecGANDiscriminator(
   else:
     batchnorm = lambda x: x
 
-  if keep_prob < 1.:
-    dropout = lambda x: tf.layers.dropout(x, 1. - keep_prob, noise_shape=[batch_size, tf.shape(x)[1], 1])
-  else:
-    dropout = lambda x: x
-
   # Layer 0
   # [128, 128, 1] -> [64, 64, 64]
   output = x
   with tf.variable_scope('downconv_0'):
     output = tf.layers.conv2d(output, dim, kernel_len, 2, padding='SAME')
   output = lrelu(output)
-  output = dropout(output)
 
   # Layer 1
   # [64, 64, 64] -> [32, 32, 128]
@@ -152,7 +145,6 @@ def SpecGANDiscriminator(
     output = tf.layers.conv2d(output, dim * 2, kernel_len, 2, padding='SAME')
     output = batchnorm(output)
   output = lrelu(output)
-  output = dropout(output)
 
   # Layer 2
   # [32, 32, 128] -> [16, 16, 256]
@@ -160,7 +152,6 @@ def SpecGANDiscriminator(
     output = tf.layers.conv2d(output, dim * 4, kernel_len, 2, padding='SAME')
     output = batchnorm(output)
   output = lrelu(output)
-  output = dropout(output)
 
   # Layer 3
   # [16, 16, 256] -> [8, 8, 512]
@@ -168,7 +159,6 @@ def SpecGANDiscriminator(
     output = tf.layers.conv2d(output, dim * 8, kernel_len, 2, padding='SAME')
     output = batchnorm(output)
   output = lrelu(output)
-  output = dropout(output)
 
   # Layer 4
   # [8, 8, 512] -> [4, 4, 1024]
