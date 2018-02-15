@@ -4,7 +4,7 @@ import tensorflow as tf
 def conv2d_transpose(
     inputs,
     filters,
-    kernel_width,
+    kernel_len,
     stride=2,
     padding='same',
     upsample='zeros'):
@@ -12,7 +12,7 @@ def conv2d_transpose(
     return tf.layers.conv2d_transpose(
         inputs,
         filters,
-        (kernel_width, kernel_width),
+        kernel_len,
         strides=(stride, stride),
         padding='same')
   elif upsample in ['nn', 'linear', 'cubic']:
@@ -33,7 +33,7 @@ def conv2d_transpose(
     return tf.layers.conv2d(
         x,
         filters,
-        (kernel_width, kernel_width),
+        kernel_len,
         strides=(1, 1),
         padding='same')
   else:
@@ -70,35 +70,35 @@ def SpecGANGenerator(
   # Layer 0
   # [4, 4, 1024] -> [8, 8, 512]
   with tf.variable_scope('upconv_0'):
-    output = conv2d_transpose(output, dim * 8, (kernel_len, kernel_len), (2, 2), upsample=upsample)
+    output = conv2d_transpose(output, dim * 8, kernel_len, 2, upsample=upsample)
     output = batchnorm(output)
   output = tf.nn.relu(output)
 
   # Layer 1
   # [8, 8, 512] -> [16, 16, 256]
   with tf.variable_scope('upconv_1'):
-    output = conv2d_transpose(output, dim * 4, (kernel_len, kernel_len), (2, 2), upsample=upsample)
+    output = conv2d_transpose(output, dim * 4, kernel_len, 2, upsample=upsample)
     output = batchnorm(output)
   output = tf.nn.relu(output)
 
   # Layer 2
   # [16, 16, 256] -> [32, 32, 128]
   with tf.variable_scope('upconv_2'):
-    output = conv2d_transpose(output, dim * 2, (kernel_len, kernel_len), (2, 2), upsample=upsample)
+    output = conv2d_transpose(output, dim * 2, kernel_len, 2, upsample=upsample)
     output = batchnorm(output)
   output = tf.nn.relu(output)
 
   # Layer 3
   # [32, 32, 128] -> [64, 64, 64]
   with tf.variable_scope('upconv_3'):
-    output = conv2d_transpose(output, dim, (kernel_len, kernel_len), (2, 2), upsample=upsample)
+    output = conv2d_transpose(output, dim, kernel_len, 2, upsample=upsample)
     output = batchnorm(output)
   output = tf.nn.relu(output)
 
   # Layer 4
   # [64, 64, 64] -> [128, 128, 1]
   with tf.variable_scope('upconv_4'):
-    output = conv2d_transpose(output, 1, (kernel_len, kernel_len), (2, 2), upsample=upsample)
+    output = conv2d_transpose(output, 1, kernel_len, 2, upsample=upsample)
   output = tf.nn.tanh(output)
 
   # Automatically update batchnorm moving averages every time G is used during training
@@ -116,21 +116,6 @@ def lrelu(inputs, alpha=0.2):
   return tf.maximum(alpha * inputs, inputs)
 
 
-def phaseshuffle(x, rad, pad_type='reflect'):
-  b, x_len, nch = x.get_shape().as_list()
-
-  phase = tf.random_uniform([], minval=-rad, maxval=rad + 1, dtype=tf.int32)
-  pad_l = tf.maximum(phase, 0)
-  pad_r = tf.maximum(-phase, 0)
-  phase_start = pad_r
-  x = tf.pad(x, [[0, 0], [pad_l, pad_r], [0, 0]], mode=pad_type)
-
-  x = x[:, phase_start:phase_start+x_len]
-  x.set_shape([b, x_len, nch])
-
-  return x
-
-
 """
   Input: [None, 128, 128, 1]
   Output: [None] (linear) output
@@ -140,7 +125,6 @@ def SpecGANDiscriminator(
     kernel_len=5,
     dim=64,
     use_batchnorm=False,
-    phaseshuffle_rad=0,
     keep_prob=1.):
   batch_size = tf.shape(x)[0]
 
@@ -148,11 +132,6 @@ def SpecGANDiscriminator(
     batchnorm = lambda x: tf.layers.batch_normalization(x, training=True)
   else:
     batchnorm = lambda x: x
-
-  if phaseshuffle_rad > 0:
-    phaseshuffle = lambda x: apply_phaseshuffle(x, phaseshuffle_rad, phaseshuffle_pad_type)
-  else:
-    phaseshuffle = lambda x: x
 
   if keep_prob < 1.:
     dropout = lambda x: tf.layers.dropout(x, 1. - keep_prob, noise_shape=[batch_size, tf.shape(x)[1], 1])
@@ -163,42 +142,38 @@ def SpecGANDiscriminator(
   # [128, 128, 1] -> [64, 64, 64]
   output = x
   with tf.variable_scope('downconv_0'):
-    output = tf.layers.conv2d(output, dim, (kernel_len, kernel_len), (2, 2), padding='SAME')
+    output = tf.layers.conv2d(output, dim, kernel_len, 2, padding='SAME')
   output = lrelu(output)
-  output = phaseshuffle(output)
   output = dropout(output)
 
   # Layer 1
   # [64, 64, 64] -> [32, 32, 128]
   with tf.variable_scope('downconv_1'):
-    output = tf.layers.conv2d(output, dim * 2, (kernel_len, kernel_len), (2, 2), padding='SAME')
+    output = tf.layers.conv2d(output, dim * 2, kernel_len, 2, padding='SAME')
     output = batchnorm(output)
   output = lrelu(output)
-  output = phaseshuffle(output)
   output = dropout(output)
 
   # Layer 2
   # [32, 32, 128] -> [16, 16, 256]
   with tf.variable_scope('downconv_2'):
-    output = tf.layers.conv2d(output, dim * 4, (kernel_len, kernel_len), (2, 2), padding='SAME')
+    output = tf.layers.conv2d(output, dim * 4, kernel_len, 2, padding='SAME')
     output = batchnorm(output)
   output = lrelu(output)
-  output = phaseshuffle(output)
   output = dropout(output)
 
   # Layer 3
   # [16, 16, 256] -> [8, 8, 512]
   with tf.variable_scope('downconv_3'):
-    output = tf.layers.conv2d(output, dim * 8, (kernel_len, kernel_len), (2, 2), padding='SAME')
+    output = tf.layers.conv2d(output, dim * 8, kernel_len, 2, padding='SAME')
     output = batchnorm(output)
   output = lrelu(output)
-  output = phaseshuffle(output)
   output = dropout(output)
 
   # Layer 4
   # [8, 8, 512] -> [4, 4, 1024]
   with tf.variable_scope('downconv_4'):
-    output = tf.layers.conv2d(output, dim * 16, (kernel_len, kernel_len), (2, 2), padding='SAME')
+    output = tf.layers.conv2d(output, dim * 16, kernel_len, 2, padding='SAME')
     output = batchnorm(output)
   output = lrelu(output)
 

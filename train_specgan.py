@@ -73,6 +73,7 @@ def f_to_t(X_norm, X_mean, X_std, ngl=16):
   X_mag = tf.exp(X_lmag)
 
   x = invert_spectra_griffin_lim(X_mag, 256, 128, ngl)
+  x = tf.reshape(x, [-1, _WINDOW_LEN, 1])
 
   return x
 
@@ -97,7 +98,7 @@ def f_to_img(X_norm):
 def train(fps, args):
   with tf.name_scope('loader'):
     x_wav = loader.get_batch(fps, args.train_batch_size, _WINDOW_LEN, args.data_first_window)
-    x = t_to_f(x_wav, args.mean, args.std)
+    x = t_to_f(x_wav, args.data_moments_mean, args.data_moments_std)
 
   # Make z vector
   z = tf.random_uniform([args.train_batch_size, _D_Z], -1., 1., dtype=tf.float32)
@@ -105,9 +106,6 @@ def train(fps, args):
   # Make generator
   with tf.variable_scope('G'):
     G_z = SpecGANGenerator(z, train=True, **args.specgan_g_kwargs)
-    if args.specgan_genr_pp:
-      with tf.variable_scope('pp_filt'):
-        G_z = tf.layers.conv1d(G_z, 1, args.specgan_genr_pp_len, use_bias=False, padding='same')
   G_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='G')
 
   # Print G summary
@@ -317,13 +315,10 @@ def infer(args):
 
   # Execute generator
   with tf.variable_scope('G'):
-    G_z = SpecGANGenerator(z, train=False, **args.specgan_g_kwargs)
-    if args.specgan_genr_pp:
-      with tf.variable_scope('pp_filt'):
-        G_z = tf.layers.conv1d(G_z, 1, args.specgan_genr_pp_len, use_bias=False, padding='same')
-  G_z = tf.identity(G_z, name='G_z_norm')
+    G_z_norm = SpecGANGenerator(z, train=False, **args.specgan_g_kwargs)
+  G_z_norm = tf.identity(G_z_norm, name='G_z_norm')
   G_z = f_to_t(G_z_norm, args.data_moments_mean, args.data_moments_std, ngl)
-  G_z = tf.reshape(G_z, [-1, 16384, 1], name='G_z')
+  G_z = tf.identity(G_z, name='G_z')
 
   G_z_norm_uint8 = f_to_img(G_z_norm)
   G_z_norm_uint8 = tf.identity(G_z_norm_uint8, name='G_z_norm_uint8')
@@ -399,6 +394,7 @@ def preview(args):
   # Set up graph for generating preview images
   feeds = {}
   feeds[graph.get_tensor_by_name('z:0')] = _zs
+  feeds[graph.get_tensor_by_name('ngl:0')] = args.specgan_ngl
   feeds[graph.get_tensor_by_name('flat_pad:0')] = _WINDOW_LEN // 2
   fetches =  {}
   fetches['step'] = tf.train.get_or_create_global_step()
@@ -454,6 +450,7 @@ def incept(args):
     gan_saver = tf.train.import_meta_graph(infer_metagraph_fp)
     score_saver = tf.train.Saver(max_to_keep=1)
   gan_z = gan_graph.get_tensor_by_name('z:0')
+  gan_ngl = gan_graph.get_tensor_by_name('ngl:0')
   gan_G_z = gan_graph.get_tensor_by_name('G_z:0')[:, :, 0]
   gan_step = gan_graph.get_tensor_by_name('global_step:0')
 
@@ -507,7 +504,7 @@ def incept(args):
 
       _G_zs = []
       for i in xrange(0, args.incept_n, 100):
-        _G_zs.append(sess.run(gan_G_z, {gan_z: _zs[i:i+100]}))
+        _G_zs.append(sess.run(gan_G_z, {gan_z: _zs[i:i+100], gan_ngl: args.specgan_ngl}))
       _G_zs = np.concatenate(_G_zs, axis=0)
 
       _preds = []
@@ -551,7 +548,7 @@ def incept(args):
   Calculates and saves dataset moments
 """
 def moments(fps, args):
-  x = loader.get_batch(fps, 1, _WINDOW_LEN, args.data_first_window, repeat=False)[0]
+  x = loader.get_batch(fps, 1, _WINDOW_LEN, args.data_first_window, repeat=False)[0, :, 0]
 
   X = tf.contrib.signal.stft(x, 256, 128, pad_end=True)
   X_mag = tf.abs(X)
@@ -559,10 +556,9 @@ def moments(fps, args):
 
   _X_lmags = []
   with tf.Session() as sess:
-    i = 0
     while True:
       try:
-        _X_lmag = sess.run()
+        _X_lmag = sess.run(X_lmag)
       except:
         break
 
@@ -582,7 +578,7 @@ if __name__ == '__main__':
 
   parser = argparse.ArgumentParser()
 
-  parser.add_argument('mode', type=str, choices=['moments', 'train', 'preview', 'incept', 'infer'])
+  parser.add_argument('mode', type=str, choices=['train', 'moments', 'preview', 'incept', 'infer'])
   parser.add_argument('train_dir', type=str,
       help='Training directory')
 
@@ -635,7 +631,7 @@ if __name__ == '__main__':
   parser.set_defaults(
     data_dir=None,
     data_first_window=False,
-    specgan_kernel_len=25,
+    specgan_kernel_len=5,
     specgan_dim=64,
     specgan_batchnorm=False,
     specgan_disc_nupdates=5,
@@ -678,12 +674,11 @@ if __name__ == '__main__':
   setattr(args, 'specgan_d_kwargs', {
       'kernel_len': args.specgan_kernel_len,
       'dim': args.specgan_dim,
-      'use_batchnorm': args.specgan_batchnorm,
-      'phaseshuffle_rad': args.specgan_disc_phaseshuffle
+      'use_batchnorm': args.specgan_batchnorm
   })
 
   # Assign appropriate split for mode
-  if args.mode == 'train':
+  if args.mode == 'train' or args.mode == 'moments':
     split = 'train'
   else:
     split = None
@@ -695,6 +690,8 @@ if __name__ == '__main__':
   if args.mode == 'train':
     infer(args)
     train(fps, args)
+  elif args.mode == 'moments':
+    moments(fps, args)
   elif args.mode == 'preview':
     preview(args)
   elif args.mode == 'incept':

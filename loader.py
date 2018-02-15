@@ -29,7 +29,7 @@ def get_batch(
     if labels:
       label = tf.reduce_join(example['label'], 0)
 
-    if args.data_first_window:
+    if first_window:
       # Use first window
       wav = wav[:window_len]
     else:
@@ -56,7 +56,7 @@ def get_batch(
   dataset = dataset.map(_mapper)
   if repeat:
     dataset = dataset.shuffle(buffer_size=8192)
-  dataset = dataset.apply(tf.contrib.data.batch_and_drop_remainder(args.train_batch_size))
+  dataset = dataset.apply(tf.contrib.data.batch_and_drop_remainder(batch_size))
   if repeat:
     dataset = dataset.repeat()
   iterator = dataset.make_one_shot_iterator()
