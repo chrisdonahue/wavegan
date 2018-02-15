@@ -111,7 +111,7 @@ def lrelu(inputs, alpha=0.2):
   return tf.maximum(alpha * inputs, inputs)
 
 
-def phaseshuffle(x, rad, pad_type='reflect'):
+def apply_phaseshuffle(x, rad, pad_type='reflect'):
   b, x_len, nch = x.get_shape().as_list()
 
   phase = tf.random_uniform([], minval=-rad, maxval=rad + 1, dtype=tf.int32)
@@ -145,7 +145,7 @@ def WaveGANDiscriminator(
     batchnorm = lambda x: x
 
   if phaseshuffle_rad > 0:
-    phaseshuffle = lambda x: phaseshuffle(x, phaseshuffle_rad)
+    phaseshuffle = lambda x: apply_phaseshuffle(x, phaseshuffle_rad)
   else:
     phaseshuffle = lambda x: x
 
