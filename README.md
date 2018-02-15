@@ -46,7 +46,7 @@ python train_wavegan.py train ./train \
 	--wavegan_disc_phaseshuffle 2
 ```
 
-If your results sound muffled or otherwise strange, try removing `--wavegan_genr_pp` or setting `--wavegan_disc_phaseshuffle 0`. 
+If your results are unsatisfactory, try removing `--wavegan_genr_pp` or setting `--wavegan_disc_phaseshuffle 0`. 
 
 To run a script that will dump a preview of fixed latent vectors at each checkpoint on the CPU
 
