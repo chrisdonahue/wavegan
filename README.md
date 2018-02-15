@@ -62,6 +62,12 @@ export CUDA_VISIBLE_DEVICES="-1"
 python train_wavegan.py incept ./train
 ```
 
+To back up checkpoints every hour (GAN training will occasionally collapse)
+
+```
+python backup.py ./train 60
+```
+
 ### Train SpecGAN
 
 Compute dataset moments to use for normalization
@@ -96,4 +102,10 @@ To run a (slow) script that will calculate inception score for the SC09 dataset 
 export CUDA_VISIBLE_DEVICES="-1"
 python train_specgan.py incept ./train \
 	--data_moments_fp ./train/moments.pkl \
+```
+
+To back up checkpoints every hour (GAN training will occasionally collapse)
+
+```
+python backup.py ./train 60
 ```
