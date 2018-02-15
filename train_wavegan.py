@@ -565,8 +565,6 @@ if __name__ == '__main__':
       help='Length of post-processing filter for DCGAN')
   wavegan_args.add_argument('--wavegan_disc_phaseshuffle', type=int,
       help='Radius of phase shuffle operation')
-  wavegan_args.add_argument('--wavegan_disc_keep_prob', type=float,
-      help='Dropout control for discriminator')
 
   train_args = parser.add_argument_group('Train')
   train_args.add_argument('--train_batch_size', type=int,
@@ -602,7 +600,6 @@ if __name__ == '__main__':
     wavegan_genr_pp=False,
     wavegan_genr_pp_len=512,
     wavegan_disc_phaseshuffle=0,
-    wavegan_disc_keep_prob=1.,
     train_batch_size=64,
     train_save_secs=300,
     train_summary_secs=120,
@@ -633,8 +630,7 @@ if __name__ == '__main__':
       'kernel_len': args.wavegan_kernel_len,
       'dim': args.wavegan_dim,
       'use_batchnorm': args.wavegan_batchnorm,
-      'phaseshuffle_rad': args.wavegan_disc_phaseshuffle,
-      'keep_prob': args.wavegan_disc_keep_prob
+      'phaseshuffle_rad': args.wavegan_disc_phaseshuffle
   })
 
   # Assign appropriate split for mode

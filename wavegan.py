@@ -135,8 +135,7 @@ def WaveGANDiscriminator(
     kernel_len=25,
     dim=64,
     use_batchnorm=False,
-    phaseshuffle_rad=0,
-    keep_prob=1.):
+    phaseshuffle_rad=0):
   batch_size = tf.shape(x)[0]
 
   if use_batchnorm:
@@ -149,11 +148,6 @@ def WaveGANDiscriminator(
   else:
     phaseshuffle = lambda x: x
 
-  if keep_prob < 1.:
-    dropout = lambda x: tf.layers.dropout(x, 1. - keep_prob, noise_shape=[batch_size, tf.shape(x)[1], 1])
-  else:
-    dropout = lambda x: x
-
   # Layer 0
   # [16384, 1] -> [4096, 64]
   output = x
@@ -161,7 +155,6 @@ def WaveGANDiscriminator(
     output = tf.layers.conv1d(output, dim, kernel_len, 4, padding='SAME')
   output = lrelu(output)
   output = phaseshuffle(output)
-  output = dropout(output)
 
   # Layer 1
   # [4096, 64] -> [1024, 128]
@@ -170,7 +163,6 @@ def WaveGANDiscriminator(
     output = batchnorm(output)
   output = lrelu(output)
   output = phaseshuffle(output)
-  output = dropout(output)
 
   # Layer 2
   # [1024, 128] -> [256, 256]
@@ -179,7 +171,6 @@ def WaveGANDiscriminator(
     output = batchnorm(output)
   output = lrelu(output)
   output = phaseshuffle(output)
-  output = dropout(output)
 
   # Layer 3
   # [256, 256] -> [64, 512]
@@ -188,7 +179,6 @@ def WaveGANDiscriminator(
     output = batchnorm(output)
   output = lrelu(output)
   output = phaseshuffle(output)
-  output = dropout(output)
 
   # Layer 4
   # [64, 512] -> [16, 1024]
