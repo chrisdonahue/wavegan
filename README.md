@@ -35,12 +35,13 @@ python data/make_tfrecord.py \
 	--slice_len 1.5 \
 ```
 
-### Train a model
+### Train WaveGAN
 
 To begin (or resume) training
 
 ```
-python train_wavegan.py train ./train --data_dir ./data/customdataset \
+python train_wavegan.py train ./train \
+	--data_dir ./data/customdataset \
 	--wavegan_genr_pp \
 	--wavegan_disc_phaseshuffle 2
 ```
@@ -59,4 +60,40 @@ To run a (slow) script that will calculate inception score for the SC09 dataset 
 ```
 export CUDA_VISIBLE_DEVICES="-1"
 python train_wavegan.py incept ./train
+```
+
+### Train SpecGAN
+
+Compute dataset moments to use for normalization
+
+```
+export CUDA_VISIBLE_DEVICES="-1"
+python train_specgan.py moments ./train \
+	--data_dir ./data/customdataset \
+	--data_moments_fp ./train/moments.pkl
+```
+
+
+To begin (or resume) training
+
+```
+python train_specgan.py train ./train \
+	--data_dir ./data/customdataset \
+	--data_moments_fp ./train/moments.pkl
+```
+
+To run a script that will dump a preview of fixed latent vectors at each checkpoint on the CPU
+
+```
+export CUDA_VISIBLE_DEVICES="-1"
+python train_specgan.py preview ./train \
+	--data_moments_fp ./train/moments.pkl \
+```
+
+To run a (slow) script that will calculate inception score for the SC09 dataset at each checkpoint
+
+```
+export CUDA_VISIBLE_DEVICES="-1"
+python train_specgan.py incept ./train \
+	--data_moments_fp ./train/moments.pkl \
 ```
