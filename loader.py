@@ -55,7 +55,7 @@ def get_batch(
   dataset = tf.data.TFRecordDataset(fps)
   dataset = dataset.map(_mapper)
   if repeat:
-    dataset = dataset.shuffle(buffer_size=8192)
+    dataset = dataset.shuffle(buffer_size=buffer_size)
   dataset = dataset.apply(tf.contrib.data.batch_and_drop_remainder(batch_size))
   if repeat:
     dataset = dataset.repeat()
