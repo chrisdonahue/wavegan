@@ -565,7 +565,7 @@ if __name__ == '__main__':
     wavegan_genr_upsample='zeros',
     wavegan_genr_pp=False,
     wavegan_genr_pp_len=512,
-    wavegan_disc_phaseshuffle=0,
+    wavegan_disc_phaseshuffle=2,
     train_batch_size=64,
     train_save_secs=300,
     train_summary_secs=120,

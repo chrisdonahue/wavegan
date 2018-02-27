@@ -41,12 +41,10 @@ To begin (or resume) training
 
 ```
 python train_wavegan.py train ./train \
-	--data_dir ./data/customdataset \
-	--wavegan_genr_pp \
-	--wavegan_disc_phaseshuffle 2
+	--data_dir ./data/customdataset
 ```
 
-If your results are unsatisfactory, try removing `--wavegan_genr_pp` or setting `--wavegan_disc_phaseshuffle 0`. 
+If your results are unsatisfactory, try adding a post-processing filter with `--wavegan_genr_pp` or removing phase shuffle with `--wavegan_disc_phaseshuffle 0`. 
 
 To run a script that will dump a preview of fixed latent vectors at each checkpoint on the CPU
 
@@ -93,7 +91,7 @@ To run a script that will dump a preview of fixed latent vectors at each checkpo
 ```
 export CUDA_VISIBLE_DEVICES="-1"
 python train_specgan.py preview ./train \
-	--data_moments_fp ./train/moments.pkl \
+	--data_moments_fp ./train/moments.pkl
 ```
 
 To run a (slow) script that will calculate inception score for the SC09 dataset at each checkpoint
@@ -101,7 +99,7 @@ To run a (slow) script that will calculate inception score for the SC09 dataset 
 ```
 export CUDA_VISIBLE_DEVICES="-1"
 python train_specgan.py incept ./train \
-	--data_moments_fp ./train/moments.pkl \
+	--data_moments_fp ./train/moments.pkl
 ```
 
 To back up checkpoints every hour (GAN training will occasionally collapse)
