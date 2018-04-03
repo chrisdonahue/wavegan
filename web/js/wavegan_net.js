@@ -130,11 +130,13 @@ window.wavegan = window.wavegan || {};
 
         // Post processing filter
         x = m.reshape(x, [b, 16384, 1]);
-        x = m.conv1d(x,
-            net.vars['G/pp_filt/conv1d/kernel'],
-            null,
-            1,
-            'same');
+        if (cfg.net.pp_filt) {
+            x = m.conv1d(x,
+                net.vars['G/pp_filt/conv1d/kernel'],
+                null,
+                1,
+                'same');
+        }
 
         // Create Float32Arrays with result
         wavs = []
