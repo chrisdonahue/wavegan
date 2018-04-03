@@ -1,0 +1,47 @@
+<html>
+<head>
+	<meta name="author" content="Anonymous">
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+	<title>WaveGAN Demo</title>
+
+    <link rel="shortcut icon" type="image/x-icon" href="img/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="img/favicon.ico">
+
+	<link rel="stylesheet" type="text/css" href="css/wavegan.css">
+</head>
+
+<body>
+
+<div id="overlay">
+    <div id="spinner"></div>
+    <p id="overlay_weights" class="overlay_txt">
+        Loading network...
+    </p>
+
+    <p id="overlay_canceled" class="overlay_txt">
+        Please try again on a different browser or refresh if you change your mind :)
+    </p>
+</div>
+
+<div id="content" hidden>
+
+<h1>WaveGAN Demo</h1>
+
+<div id="demo">
+	<h3>Chris Donahue, Julian McAuley, Miller Puckette</h3>
+
+	<button type="button" style="height:64px;width:64px" id="sound">Hi</button>
+</div>
+
+</div>
+
+<script type="text/javascript" src="js/deeplearn-0.4.1.min.js"></script>
+<script type="text/javascript" src="js/wavegan_cfg.js"></script>
+<script type="text/javascript" src="js/wavegan_reqs.js"></script>
+<script type="text/javascript" src="js/wavegan_net.js"></script>
+<script type="text/javascript" src="js/wavegan_player.js"></script>
+<script type="text/javascript" src="js/wavegan_ui.js"></script>
+
+</body>
+</html>
