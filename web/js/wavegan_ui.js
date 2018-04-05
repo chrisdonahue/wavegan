@@ -40,11 +40,13 @@ window.wavegan = window.wavegan || {};
     };
 
     var player = null;
+    var visualizer = null;
 
     var onClick = function (event) {
         var z = [random_vector(wavegan.cfg.net.d_z), random_vector(wavegan.cfg.net.d_z)];
         var Gz = wavegan.net.eval(z);
         player.setSample(Gz[0], 16000);
+        visualizer.setSample(Gz[0], 16000);
         player.bang()
     };
 
@@ -59,6 +61,7 @@ window.wavegan = window.wavegan || {};
         gainNode.connect(audioCtx.destination);
 
         player = new wavegan.player.ResamplingPlayer(audioCtx.sampleRate);
+        visualizer = new wavegan.visualizer.WaveformVisualizer('wav1');
 
         var scriptProcessor = audioCtx.createScriptProcessor(512, 0, 1);
         console.log(scriptProcessor);
