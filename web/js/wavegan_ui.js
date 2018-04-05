@@ -79,7 +79,7 @@ window.wavegan = window.wavegan || {};
     // Initializer for waveform players/visualizers
     var zactors = null;
     var initZactors = function (audioCtx) {
-        var nzactors = 2;
+        var nzactors = 8;
 
         // Create zactors
         zactors = [];

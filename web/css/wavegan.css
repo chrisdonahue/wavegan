@@ -51,3 +51,27 @@ body {
 #overlay_canceled {
     display: none;
 }
+
+.zactor {
+    display: inline-block;
+    width: 120px;
+    height: 120px;
+    margin: 8px;
+    padding: 0px;
+}
+.zactor canvas {
+    display: inline;
+    margin: 0px;
+    padding: 0px;
+}
+.zactor button {
+    display: inline;
+    margin: 0px;
+    padding: 0px;
+    height: 30px;
+    width: 120px;
+}
+
+.row {
+    display: block;
+}
