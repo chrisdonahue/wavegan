@@ -4,14 +4,10 @@ import shutil
 bundle_dir = 'bundle'
 
 paths = [
-  'ckpts/wavegan_birds_80422',
+  'ckpts/drums',
   'css',
   'img',
-  'js/deeplearn-0.4.1.min.js',
-  'js/wavegan_cfg.js',
-  'js/wavegan_net.js',
-  'js/wavegan_reqs.js',
-  'js/wavegan_ui.js',
+  'js',
   'index.html'
 ]
 
