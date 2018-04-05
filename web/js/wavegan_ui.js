@@ -44,7 +44,7 @@ window.wavegan = window.wavegan || {};
 
         var that = this;
         this.canvas.onclick = function (event) {
-            that.player.bang();
+            that.bang();
         };
         this.button.onclick = function (event) {
             that.randomize();
@@ -67,13 +67,8 @@ window.wavegan = window.wavegan || {};
     Zactor.prototype.readBlock = function (buffer) {
         this.player.readBlock(buffer);
     };
-
-    // Global resize callback
-    var onResize = function (event) {
-        var demo = document.getElementById('demo');
-        var demoHeight = demo.offsetTop + demo.offsetHeight;
-        var viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
-        return;
+    Zactor.prototype.bang = function () {
+        this.player.bang();
     };
 
     // Initializer for waveform players/visualizers
@@ -113,6 +108,30 @@ window.wavegan = window.wavegan || {};
         return scriptProcessor;
     };
 
+    // Global resize callback
+    var onResize = function (event) {
+        var demo = document.getElementById('demo');
+        var demoHeight = demo.offsetTop + demo.offsetHeight;
+        var viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+        return;
+    };
+
+    // Global keyboard callback
+    var onKeydown = function (event) {
+        var key = event.keyCode;
+        var digit = key - 48;
+        var zactorid = digit - 1;
+        var shifted = event.getModifierState('Shift');
+        if (zactorid >= 0 && zactorid < 8) {
+            if (shifted) {
+                zactors[zactorid].randomize();
+            }
+            else {
+                zactors[zactorid].bang();
+            }
+        }
+    };
+
     // Run once DOM loads
     var domReady = function () {
         cfg.debugMsg('DOM ready');
@@ -139,6 +158,8 @@ window.wavegan = window.wavegan || {};
 
         window.addEventListener('resize', onResize, true);
         onResize();
+
+        window.addEventListener('keydown', onKeydown, true);
     };
 
     // DOM load callbacks

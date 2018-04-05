@@ -1,6 +1,6 @@
 html, body {
     margin: 0px;
-    padding: 0px;
+    padding: 8px;
     height: 100%;
 }
 
@@ -56,7 +56,8 @@ body {
     display: inline-block;
     width: 120px;
     height: 120px;
-    margin: 8px;
+    margin-right: 8px;
+    margin-bottom: 8px;
     padding: 0px;
 }
 .zactor canvas {
