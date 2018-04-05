@@ -23,6 +23,7 @@ window.wavegan = window.wavegan || {};
         this.sampleLength = sample.length;
         this.sampleIdx = 0;
         this.sampleIdxInc = sampleFs / this.fs;
+        this.playing = false;
     };
     ResamplingPlayer.prototype.bang = function () {
         this.sampleIdx = 0;

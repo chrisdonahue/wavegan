@@ -21,9 +21,9 @@ window.wavegan = window.wavegan || {};
         var pxdt = t / w;
 
         // Clear background
-        ctx.clearRect(0, 0, 320, 180);
+        ctx.clearRect(0, 0, w, h);
         ctx.fillStyle = '#000000';
-        ctx.fillRect(0, 0, 320, 180);
+        ctx.fillRect(0, 0, w, h);
 
         // Draw DC line
         ctx.fillStyle = '#33ccff';
