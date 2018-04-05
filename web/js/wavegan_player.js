@@ -25,13 +25,11 @@ window.wavegan = window.wavegan || {};
         this.sampleIdxInc = sampleFs / this.fs;
     };
     ResamplingPlayer.prototype.bang = function () {
+        this.sampleIdx = 0;
         this.playing = true;
     };
     ResamplingPlayer.prototype.readBlock = function (buffer) {
         if (!this.playing) {
-            for (var i = 0; i < buffer.length; ++i) {
-                buffer[i] = 0;
-            }
             return;
         }
 
@@ -45,14 +43,10 @@ window.wavegan = window.wavegan || {};
             frac = sampleIdx - floor;
 
             if (floor < sampleLength) {
-                buffer[i] = (1 - frac) * sample[floor] + frac * sample[floor + 1];
+                buffer[i] += (1 - frac) * sample[floor] + frac * sample[floor + 1];
             }
             else {
-                console.log('done');
                 this.playing = false;
-                for (; i < buffer.length; ++i) {
-                    buffer[i] = 0;
-                }
                 break;
             }
 

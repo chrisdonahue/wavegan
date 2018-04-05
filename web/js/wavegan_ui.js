@@ -10,7 +10,8 @@ window.wavegan = window.wavegan || {};
     }
 
     // Make a new random vector
-    var random_vector = function (d) {
+    var random_vector = function () {
+        var d = wavegan.cfg.net.d_z;
         var z = new Float32Array(d);
         for (var i = 0; i < d; ++i) {
             z[i] = (Math.random() * 2.) - 1.;
@@ -32,6 +33,42 @@ window.wavegan = window.wavegan || {};
         return interp;
     };
 
+    // Class to handle UI interactions with player/visualizer
+    var Zactor = function (fs, div) {
+        this.canvas = div.children[0];
+        this.button = div.children[1];
+        this.player = new wavegan.player.ResamplingPlayer(fs);
+        this.visualizer = new wavegan.visualizer.WaveformVisualizer(this.canvas);
+        this.z = null;
+        this.Gz = null;
+
+        var that = this;
+        this.canvas.onclick = function (event) {
+            that.player.bang();
+        };
+        this.button.onclick = function (event) {
+            that.randomize();
+        };
+    };
+    Zactor.prototype.setPrerendered = function (z, Gz) {
+        this.z = z;
+        this.Gz = Gz;
+        this.player.setSample(Gz, 16000);
+        this.visualizer.setSample(Gz);
+    };
+    Zactor.prototype.setZ = function (z) {
+        var Gz = wavegan.net.eval([z])[0];
+        this.setPrerendered(z, Gz);
+    };
+    Zactor.prototype.randomize = function () {
+        var z = random_vector();
+        this.setZ(z);
+    };
+    Zactor.prototype.readBlock = function (buffer) {
+        this.player.readBlock(buffer);
+    };
+
+    // Global resize callback
     var onResize = function (event) {
         var demo = document.getElementById('demo');
         var demoHeight = demo.offsetTop + demo.offsetHeight;
@@ -39,15 +76,41 @@ window.wavegan = window.wavegan || {};
         return;
     };
 
-    var player = null;
-    var visualizer = null;
+    // Initializer for waveform players/visualizers
+    var zactors = null;
+    var initZactors = function (audioCtx) {
+        var nzactors = 2;
 
-    var onClick = function (event) {
-        var z = [random_vector(wavegan.cfg.net.d_z), random_vector(wavegan.cfg.net.d_z)];
-        var Gz = wavegan.net.eval(z);
-        player.setSample(Gz[0], 16000);
-        visualizer.setSample(Gz[0], 16000);
-        player.bang()
+        // Create zactors
+        zactors = [];
+        for (var i = 0; i < nzactors; ++i) {
+            var div = document.getElementById('zactor' + String(i));
+            zactors.push(new Zactor(audioCtx.sampleRate, div));
+        }
+
+        // Render initial batch
+        var zs = [];
+        for (var i = 0; i < nzactors; ++i) {
+            zs.push(random_vector());
+        }
+        var Gzs = wavegan.net.eval(zs);
+        for (var i = 0; i < nzactors; ++i) {
+            zactors[i].setPrerendered(zs[i], Gzs[i]);
+        }
+
+        // Hook up audio
+        var scriptProcessor = audioCtx.createScriptProcessor(512, 0, 1);
+        scriptProcessor.onaudioprocess = function (event) {
+            var buffer = event.outputBuffer.getChannelData(0);
+            for (var i = 0; i < buffer.length; ++i) {
+                buffer[i] = 0;
+            }
+            for (var i = 0; i < nzactors; ++i) {
+                zactors[i].readBlock(buffer);
+            }
+        };
+
+        return scriptProcessor;
     };
 
     // Run once DOM loads
@@ -60,20 +123,11 @@ window.wavegan = window.wavegan || {};
         gainNode.gain.value = 1.0;
         gainNode.connect(audioCtx.destination);
 
-        player = new wavegan.player.ResamplingPlayer(audioCtx.sampleRate);
-        visualizer = new wavegan.visualizer.WaveformVisualizer('wav1');
-
-        var scriptProcessor = audioCtx.createScriptProcessor(512, 0, 1);
-        console.log(scriptProcessor);
-        scriptProcessor.onaudioprocess = function (event) {
-            var output = event.outputBuffer;
-            player.readBlock(output.getChannelData(0));
-        };
-        scriptProcessor.connect(gainNode);
-
         // (Gross) wait for net to be ready
         var wait = function() {
             if (wavegan.net.isReady()) {
+                var scriptProcessor = initZactors(audioCtx);
+                scriptProcessor.connect(gainNode);
                 document.getElementById('overlay').setAttribute('hidden', '');
                 document.getElementById('content').removeAttribute('hidden');
             }
@@ -85,9 +139,6 @@ window.wavegan = window.wavegan || {};
 
         window.addEventListener('resize', onResize, true);
         onResize();
-
-        var button = document.getElementById('sound');
-        button.onclick = onClick;
     };
 
     // DOM load callbacks

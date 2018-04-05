@@ -4,26 +4,33 @@ window.wavegan = window.wavegan || {};
     // Config
     var cfg = wavegan.cfg;
 
-    var WaveformVisualizer = function (canvasId) {
-        this.canvas = document.getElementById(canvasId);
+    var WaveformVisualizer = function (canvas) {
+        this.canvas = canvas;
         this.canvasCtx = this.canvas.getContext('2d');
+        this.canvasWidth = this.canvas.width;
+        this.canvasHeight = this.canvas.height;
     };
-    WaveformVisualizer.prototype.setSample = function (sample, sampleFs) {
+    WaveformVisualizer.prototype.setSample = function (sample) {
         var ctx = this.canvasCtx;
+        var w = this.canvasWidth;
+        var h = this.canvasHeight;
+        var gain = cfg.ui.visualizerGain;
 
-        ctx.clearRect(0, 0, 320, 180);
-        ctx.fillStyle = '#ff0000';
-        ctx.fillRect(0, 0, 320, 180);
-
-        var w = 320;
-        var h = 180;
         var hd2 = h / 2;
         var t = sample.length;
-
         var pxdt = t / w;
 
+        // Clear background
+        ctx.clearRect(0, 0, 320, 180);
         ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, 320, 180);
 
+        // Draw DC line
+        ctx.fillStyle = '#33ccff';
+        ctx.fillRect(0, hd2, w, 1);
+
+        // Draw waveform
+        ctx.fillStyle = '#33ccff';
         for (var i = 0; i < w; ++i) {
             var tl = Math.floor(i * pxdt);
             var th = Math.floor((i + 1) * pxdt);
@@ -35,10 +42,10 @@ window.wavegan = window.wavegan || {};
                 }
             }
 
-            var rect_height = max * hd2;
+            var rect_height = max * hd2 * gain;
 
-            ctx.fillRect(i, hd2 - rect_height, i+1, rect_height);
-            ctx.fillRect(i, hd2, i+1, rect_height);
+            ctx.fillRect(i, hd2 - rect_height, 1, rect_height);
+            ctx.fillRect(i, hd2, 1, rect_height);
         }
     };
 

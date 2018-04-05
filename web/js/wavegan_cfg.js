@@ -16,7 +16,8 @@ window.wavegan = window.wavegan || {};
 	    d_z: 100
         },
         ui: {
-            canvasFlushDelayMs: 25
+            canvasFlushDelayMs: 25,
+            visualizerGain: 5,
         },
     };
 
