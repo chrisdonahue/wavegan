@@ -41,18 +41,32 @@ window.wavegan = window.wavegan || {};
         this.visualizer = new wavegan.visualizer.WaveformVisualizer(this.canvas);
         this.z = null;
         this.Gz = null;
+        this.filename = null;
 
         var that = this;
         this.canvas.onclick = function (event) {
             that.bang();
         };
-        this.button.onclick = function (event) {
+
+        // Change button
+        div.children[1].onclick = function (event) {
             that.randomize();
+        };
+
+        // Save button
+        div.children[2].onclick = function (event) {
+            if (that.Gz !== null) {
+                if (that.filename === null) {
+                    that.filename = wavegan.savewav.randomFilename();
+                }
+                wavegan.savewav.saveWav(that.filename, that.Gz);
+            }
         };
     };
     Zactor.prototype.setPrerendered = function (z, Gz) {
         this.z = z;
         this.Gz = Gz;
+        this.filename = null;
         this.player.setSample(Gz, 16000);
         this.visualizer.setSample(Gz);
     };
@@ -74,7 +88,7 @@ window.wavegan = window.wavegan || {};
     // Initializer for waveform players/visualizers
     var zactors = null;
     var initZactors = function (audioCtx) {
-        var nzactors = 8;
+        var nzactors = cfg.ui.zactorNumRows * cfg.ui.zactorNumCols;
 
         // Create zactors
         zactors = [];

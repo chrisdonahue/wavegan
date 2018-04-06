@@ -66,11 +66,11 @@ body {
     padding: 0px;
 }
 .zactor button {
-    display: inline;
+    float: left;
     margin: 0px;
     padding: 0px;
     height: 30px;
-    width: 40px;
+    width: 60px;
 }
 
 .row {
