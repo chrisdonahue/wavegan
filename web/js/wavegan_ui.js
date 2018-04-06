@@ -11,7 +11,7 @@ window.wavegan = window.wavegan || {};
 
     // Make a new random vector
     var random_vector = function () {
-        var d = wavegan.cfg.net.d_z;
+        var d = wavegan.cfg.net.zDim;
         var z = new Float32Array(d);
         for (var i = 0; i < d; ++i) {
             z[i] = (Math.random() * 2.) - 1.;
@@ -136,10 +136,24 @@ window.wavegan = window.wavegan || {};
     var domReady = function () {
         cfg.debugMsg('DOM ready');
 
-        var audioCtx = new window.AudioContext();
+        // Create grid
+        var cellTemplate = document.getElementById('zactor-template').innerHTML;
+        var i = 0;
+        var gridHtml = '';
+        for (var j = 0; j < cfg.ui.zactorNumRows; ++j) {
+            gridHtml += '<div class="row">';
+            for (var k = 0; k < cfg.ui.zactorNumCols; ++k) {
+                gridHtml += cellTemplate.replace('{ID}', 'zactor' + String(i));
+                ++i;
+            }
+            gridHtml += '</div>';
+        }
+        document.getElementById('zactors').innerHTML = gridHtml;
 
+        // Initialize audio
+        var audioCtx = new window.AudioContext();
         var gainNode = audioCtx.createGain();
-        gainNode.gain.value = 1.0;
+        gainNode.gain.value = 0.25;
         gainNode.connect(audioCtx.destination);
 
         // (Gross) wait for net to be ready
@@ -156,9 +170,11 @@ window.wavegan = window.wavegan || {};
         };
         setTimeout(wait, 5);
 
+        // Global resize callback
         window.addEventListener('resize', onResize, true);
         onResize();
 
+        // Global key listener callback
         window.addEventListener('keydown', onKeydown, true);
     };
 

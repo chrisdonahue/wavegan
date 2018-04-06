@@ -39,7 +39,7 @@ window.wavegan = window.wavegan || {};
 
     // Initialize network and hardware
     var initVars = function () {
-        var varLoader = new dl.CheckpointLoader(cfg.net.ckpt_dir);
+        var varLoader = new dl.CheckpointLoader(cfg.net.ckptDir);
         varLoader.getAllVariables().then(function (vars) {
             net.vars = vars;
             net.ready = true;
@@ -60,7 +60,7 @@ window.wavegan = window.wavegan || {};
             throw 'Hardware not ready';
         }
         for (var i = 0; i < _z.length; ++i) {
-            if (_z[i].length !== cfg.net.d_z) {
+            if (_z[i].length !== cfg.net.zDim) {
                 throw 'Input shape incorrect'
             }
         }
@@ -69,13 +69,13 @@ window.wavegan = window.wavegan || {};
 
         // Reshape input to 2D array
         var b = _z.length;
-        var _z_flat = new Float32Array(b * cfg.net.d_z);
+        var _z_flat = new Float32Array(b * cfg.net.zDim);
         for (var i = 0; i < b; ++i) {
-            for (var j = 0; j < cfg.net.d_z; ++j) {
-                _z_flat[i * cfg.net.d_z + j] = _z[i][j];
+            for (var j = 0; j < cfg.net.zDim; ++j) {
+                _z_flat[i * cfg.net.zDim + j] = _z[i][j];
             }
         }
-        var x = dl.Array2D.new([b, cfg.net.d_z], _z_flat);
+        var x = dl.Array2D.new([b, cfg.net.zDim], _z_flat);
 
         // Project to [b, 1, 16, 1024]
         x = m.matMul(x, net.vars['G/z_project/dense/kernel']);

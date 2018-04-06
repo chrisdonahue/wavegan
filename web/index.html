@@ -34,57 +34,20 @@
 	<p><b>Keyboard control:</b> Use keys 1-8 to play sounds. Hold shift while pressing 1-8 to change sound.</p>
 	<p><b>Mouse control:</b> Touch waveform to play sound. Touch "Change" to change sound.</p>
 
-	<div class="row">
-
-	<div id="zactor0" class="zactor">
-	    <canvas height="90" width="120"></canvas>
-	    <button type="button" class="change">Change</button>
+	<div id="zactors">
 	</div>
-
-	<div id="zactor1" class="zactor">
-	    <canvas height="90" width="120"></canvas>
-	    <button type="button" class="change">Change</button>
-	</div>
-
-	<div id="zactor2" class="zactor">
-	    <canvas height="90" width="120"></canvas>
-	    <button type="button" class="change">Change</button>
-	</div>
-
-	<div id="zactor3" class="zactor">
-	    <canvas height="90" width="120"></canvas>
-	    <button type="button" class="change">Change</button>
-	</div>
-
-	</div>
-
-	<div class="row">
-
-	<div id="zactor4" class="zactor">
-	    <canvas height="90" width="120"></canvas>
-	    <button type="button" class="change">Change</button>
-	</div>
-
-	<div id="zactor5" class="zactor">
-	    <canvas height="90" width="120"></canvas>
-	    <button type="button" class="change">Change</button>
-	</div>
-
-	<div id="zactor6" class="zactor">
-	    <canvas height="90" width="120"></canvas>
-	    <button type="button" class="change">Change</button>
-	</div>
-
-	<div id="zactor7" class="zactor">
-	    <canvas height="90" width="120"></canvas>
-	    <button type="button" class="change">Change</button>
-	</div>
-
-	</div>
-
 </div>
 
 </div>
+
+<script id="zactor-template" type="text/template">
+<div id="{ID}" class="zactor">
+    <canvas height="90" width="120"></canvas>
+    <button type="button" class="change">Change</button>
+    <button type="button" class="save">Save</button>
+    <button type="button" class="load">Load</button>
+</div>
+</script>
 
 <script type="text/javascript" src="js/deeplearn-0.4.1.min.js"></script>
 <script type="text/javascript" src="js/wavegan_cfg.js"></script>
