@@ -15,11 +15,15 @@ window.wavegan = window.wavegan || {};
             ppFilt: true,
 	    zDim: 100
         },
+        audio: {
+            gain: 1,
+        },
         ui: {
             canvasFlushDelayMs: 25,
-            visualizerGain: 3,
+            visualizerGain: 1,
             zactorNumRows: 2,
-            zactorNumCols: 4
+            zactorNumCols: 4,
+            rmsAnimDelayMs: 25
         }
     };
 

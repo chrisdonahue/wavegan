@@ -39,6 +39,7 @@ window.wavegan = window.wavegan || {};
         this.button = div.children[1];
         this.player = new wavegan.player.ResamplingPlayer(fs);
         this.visualizer = new wavegan.visualizer.WaveformVisualizer(this.canvas);
+        this.animFramesRemaining = 0;
         this.z = null;
         this.Gz = null;
         this.filename = null;
@@ -83,6 +84,20 @@ window.wavegan = window.wavegan || {};
     };
     Zactor.prototype.bang = function () {
         this.player.bang();
+
+        this.animFramesRemaining = Math.round(1024 / cfg.ui.rmsAnimDelayMs);
+        var lastRemaining = this.animFramesRemaining;
+        var that = this;
+        var animFrame = function () {
+            that.visualizer.render(that.player.getRmsAmplitude());
+            if (that.animFramesRemaining > 0 && lastRemaining === that.animFramesRemaining) {
+                --that.animFramesRemaining;
+                --lastRemaining;
+                setTimeout(animFrame, cfg.ui.rmsAnimDelayMs);
+            }
+        };
+
+        animFrame();
     };
 
     // Initializer for waveform players/visualizers
@@ -167,7 +182,7 @@ window.wavegan = window.wavegan || {};
         // Initialize audio
         var audioCtx = new window.AudioContext();
         var gainNode = audioCtx.createGain();
-        gainNode.gain.value = 0.25;
+        gainNode.gain.value = cfg.audio.gain;
         gainNode.connect(audioCtx.destination);
 
         // (Gross) wait for net to be ready
