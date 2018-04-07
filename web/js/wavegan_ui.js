@@ -159,6 +159,11 @@ window.wavegan = window.wavegan || {};
                 zactors[zactorid].bang();
             }
         }
+
+        /*
+        if (key === 74) {
+        }
+        */
     };
 
     // Run once DOM loads
