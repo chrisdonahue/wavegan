@@ -11,14 +11,20 @@ window.wavegan = window.wavegan || {};
             mobileWarning: 'Warning: This demo runs a neural network in your browser. It appears you are on a mobile device. Consider running the demo on your laptop instead. Continue?'
         },
         net: {
-            ckpt_dir: 'ckpts/drums',
-            pp_filt: true,
-	    d_z: 100
+            ckptDir: 'ckpts/drums',
+            ppFilt: true,
+	    zDim: 100
+        },
+        audio: {
+            gain: 1,
         },
         ui: {
             canvasFlushDelayMs: 25,
-            visualizerGain: 5,
-        },
+            visualizerGain: 1,
+            zactorNumRows: 2,
+            zactorNumCols: 4,
+            rmsAnimDelayMs: 25
+        }
     };
 
     wavegan.cfg.debugMsg = function (msg) {

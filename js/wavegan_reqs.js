@@ -1,6 +1,6 @@
 window.wavegan = window.wavegan || {};
 
-(function (deeplearn) {
+(function (deeplearn, wavegan) {
     var cfg = wavegan.cfg;
 
     // Prompt if no WebGL

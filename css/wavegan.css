@@ -54,7 +54,7 @@ body {
 
 .zactor {
     display: inline-block;
-    width: 120px;
+    width: 160px;
     height: 120px;
     margin-right: 8px;
     margin-bottom: 8px;
@@ -64,13 +64,15 @@ body {
     display: inline;
     margin: 0px;
     padding: 0px;
+    user-select: none;
 }
 .zactor button {
-    display: inline;
+    float: left;
     margin: 0px;
     padding: 0px;
     height: 30px;
-    width: 120px;
+    width: 80px;
+    user-select: none;
 }
 
 .row {

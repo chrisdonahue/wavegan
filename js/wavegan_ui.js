@@ -11,7 +11,7 @@ window.wavegan = window.wavegan || {};
 
     // Make a new random vector
     var random_vector = function () {
-        var d = wavegan.cfg.net.d_z;
+        var d = wavegan.cfg.net.zDim;
         var z = new Float32Array(d);
         for (var i = 0; i < d; ++i) {
             z[i] = (Math.random() * 2.) - 1.;
@@ -39,20 +39,35 @@ window.wavegan = window.wavegan || {};
         this.button = div.children[1];
         this.player = new wavegan.player.ResamplingPlayer(fs);
         this.visualizer = new wavegan.visualizer.WaveformVisualizer(this.canvas);
+        this.animFramesRemaining = 0;
         this.z = null;
         this.Gz = null;
+        this.filename = null;
 
         var that = this;
         this.canvas.onclick = function (event) {
             that.bang();
         };
-        this.button.onclick = function (event) {
+
+        // Change button
+        div.children[1].onclick = function (event) {
             that.randomize();
+        };
+
+        // Save button
+        div.children[2].onclick = function (event) {
+            if (that.Gz !== null) {
+                if (that.filename === null) {
+                    that.filename = wavegan.savewav.randomFilename();
+                }
+                wavegan.savewav.saveWav(that.filename, that.Gz);
+            }
         };
     };
     Zactor.prototype.setPrerendered = function (z, Gz) {
         this.z = z;
         this.Gz = Gz;
+        this.filename = null;
         this.player.setSample(Gz, 16000);
         this.visualizer.setSample(Gz);
     };
@@ -69,12 +84,26 @@ window.wavegan = window.wavegan || {};
     };
     Zactor.prototype.bang = function () {
         this.player.bang();
+
+        this.animFramesRemaining = Math.round(1024 / cfg.ui.rmsAnimDelayMs);
+        var lastRemaining = this.animFramesRemaining;
+        var that = this;
+        var animFrame = function () {
+            that.visualizer.render(that.player.getRmsAmplitude());
+            if (that.animFramesRemaining > 0 && lastRemaining === that.animFramesRemaining) {
+                --that.animFramesRemaining;
+                --lastRemaining;
+                setTimeout(animFrame, cfg.ui.rmsAnimDelayMs);
+            }
+        };
+
+        animFrame();
     };
 
     // Initializer for waveform players/visualizers
     var zactors = null;
     var initZactors = function (audioCtx) {
-        var nzactors = 8;
+        var nzactors = cfg.ui.zactorNumRows * cfg.ui.zactorNumCols;
 
         // Create zactors
         zactors = [];
@@ -136,10 +165,24 @@ window.wavegan = window.wavegan || {};
     var domReady = function () {
         cfg.debugMsg('DOM ready');
 
-        var audioCtx = new window.AudioContext();
+        // Create grid
+        var cellTemplate = document.getElementById('zactor-template').innerHTML;
+        var i = 0;
+        var gridHtml = '';
+        for (var j = 0; j < cfg.ui.zactorNumRows; ++j) {
+            gridHtml += '<div class="row">';
+            for (var k = 0; k < cfg.ui.zactorNumCols; ++k) {
+                gridHtml += cellTemplate.replace('{ID}', 'zactor' + String(i));
+                ++i;
+            }
+            gridHtml += '</div>';
+        }
+        document.getElementById('zactors').innerHTML = gridHtml;
 
+        // Initialize audio
+        var audioCtx = new window.AudioContext();
         var gainNode = audioCtx.createGain();
-        gainNode.gain.value = 1.0;
+        gainNode.gain.value = cfg.audio.gain;
         gainNode.connect(audioCtx.destination);
 
         // (Gross) wait for net to be ready
@@ -156,9 +199,11 @@ window.wavegan = window.wavegan || {};
         };
         setTimeout(wait, 5);
 
+        // Global resize callback
         window.addEventListener('resize', onResize, true);
         onResize();
 
+        // Global key listener callback
         window.addEventListener('keydown', onKeydown, true);
     };
 
