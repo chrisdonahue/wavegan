@@ -11,7 +11,7 @@ window.wavegan = window.wavegan || {};
             mobileWarning: 'Warning: This demo runs a neural network in your browser. It appears you are on a mobile device. Consider running the demo on your laptop instead. Continue?'
         },
         net: {
-            ckptDir: 'ckpts/drums',
+            ckptDir: 'https://chrisdonahue.github.io/wavegan_demo_bulk/ckpts/drums',
             ppFilt: true,
 	    zDim: 100
         },
