@@ -24,6 +24,10 @@ window.wavegan = window.wavegan || {};
             zactorNumRows: 2,
             zactorNumCols: 4,
             rmsAnimDelayMs: 25
+        },
+        sequencer: {
+            labelWidth: 100,
+            numCols: 16
         }
     };
 

@@ -36,6 +36,16 @@
 
 	<div id="zactors">
 	</div>
+
+	<div id="sequencer">
+		<button type="button" id="play">Play</button>
+		<button type="button" id="stop">Stop</button>
+		<button type="button" id="clear">Clear</button>
+		<label>Volume</label><input type="range" id="gain" min="0" max="100"></input>
+		<label>Tempo</label><input type="range" id="gain" min="0" max="100"></input>
+		<br>
+		<canvas id="sequencer-canvas" height="320" width="700"></canvas>
+	</div>
 </div>
 
 </div>
@@ -54,6 +64,7 @@
 <script type="text/javascript" src="js/wavegan_net.js"></script>
 <script type="text/javascript" src="js/wavegan_player.js"></script>
 <script type="text/javascript" src="js/wavegan_visualizer.js"></script>
+<script type="text/javascript" src="js/wavegan_sequencer.js"></script>
 <script type="text/javascript" src="js/wavegan_savewav.js"></script>
 <script type="text/javascript" src="js/wavegan_ui.js"></script>
 

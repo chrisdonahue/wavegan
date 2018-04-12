@@ -166,6 +166,9 @@ window.wavegan = window.wavegan || {};
         */
     };
 
+    // Sequencer state
+    var sequencer = null;
+
     // Run once DOM loads
     var domReady = function () {
         cfg.debugMsg('DOM ready');
@@ -195,6 +198,9 @@ window.wavegan = window.wavegan || {};
             if (wavegan.net.isReady()) {
                 var scriptProcessor = initZactors(audioCtx);
                 scriptProcessor.connect(gainNode);
+                var seqCanvas = document.getElementById('sequencer-canvas');
+                sequencer = new wavegan.sequencer.Sequencer(seqCanvas, zactors);
+                sequencer.render();
                 document.getElementById('overlay').setAttribute('hidden', '');
                 document.getElementById('content').removeAttribute('hidden');
             }
