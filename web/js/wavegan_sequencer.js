@@ -250,6 +250,14 @@ window.wavegan = window.wavegan || {};
         this.playing = false;
         this.render();
     };
+    Sequencer.prototype.toggle = function () {
+        if (this.playing) {
+            this.stop();
+        }
+        else {
+            this.play();
+        }
+    };
     Sequencer.prototype.clear = function () {
         for (var j = 0; j < this.numRows; ++j) {
             for (var i = 0; i < this.numCols; ++i) {

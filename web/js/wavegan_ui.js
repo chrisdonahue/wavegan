@@ -148,6 +148,9 @@ window.wavegan = window.wavegan || {};
         return scriptProcessor;
     };
 
+    // Sequencer state
+    var sequencer = null;
+
     // Global resize callback
     var onResize = function (event) {
         var demo = document.getElementById('demo');
@@ -173,12 +176,9 @@ window.wavegan = window.wavegan || {};
 
         // Space bar
         if (key == 32) {
-            // TODO: Toggle sequencer playing
+            sequencer.toggle();
         }
     };
-
-    // Sequencer state
-    var sequencer = null;
 
     var initSlider = function (sliderId, sliderMin, sliderMax, sliderDefault, callback) {
         var slider = document.getElementById(sliderId);
