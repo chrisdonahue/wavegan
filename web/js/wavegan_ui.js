@@ -180,6 +180,22 @@ window.wavegan = window.wavegan || {};
         }, true);
     };
 
+    var createReverb = function (audioCtx) {
+        var sampleRate = audioCtx.sampleRate;
+        var reverbLen = Math.floor(sampleRate * cfg.audio.reverbLen);
+        var reverbDcy = cfg.audio.reverbDecay;
+        var impulse = audioCtx.createBuffer(2, reverbLen, sampleRate);
+        var impulseL = impulse.getChannelData(0);
+        var impulseR = impulse.getChannelData(1);
+        for (var i = 0; i < reverbLen; ++i) {
+            impulseL[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / reverbLen, reverbDcy);
+            impulseR[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / reverbLen, reverbDcy);
+        }
+        var reverbNode = audioCtx.createConvolver();
+        reverbNode.buffer = impulse;
+        return reverbNode
+    };
+
     // Run once DOM loads
     var domReady = function () {
         cfg.debugMsg('DOM ready');
@@ -200,18 +216,27 @@ window.wavegan = window.wavegan || {};
 
         // Initialize audio
         var audioCtx = new window.AudioContext();
+
+        var reverbNode = createReverb(audioCtx);
+        var wet = audioCtx.createGain();
+        var dry = audioCtx.createGain();
         var gainNode = audioCtx.createGain();
-        gainNode.gain.value = 1.;
+        reverbNode.connect(wet);
+        wet.connect(gainNode);
+        dry.connect(gainNode);
         gainNode.connect(audioCtx.destination);
 
         // (Gross) wait for net to be ready
         var wait = function() {
             if (wavegan.net.isReady()) {
                 var scriptProcessor = initZactors(audioCtx);
-                scriptProcessor.connect(gainNode);
+                scriptProcessor.connect(reverbNode);
+                scriptProcessor.connect(dry);
+
                 var seqCanvas = document.getElementById('sequencer-canvas');
                 sequencer = new wavegan.sequencer.Sequencer(seqCanvas, zactors);
                 sequencer.render();
+
                 document.getElementById('overlay').setAttribute('hidden', '');
                 document.getElementById('content').removeAttribute('hidden');
             }
@@ -238,6 +263,13 @@ window.wavegan = window.wavegan || {};
                 cfg.audio.gainDefault,
                 function (val) {
                     gainNode.gain.value = val * val * val * val;
+        });
+        initSlider('reverb',
+                0, 1,
+                cfg.audio.reverbDefault,
+                function (val) {
+                    dry.gain.value = (1 - val);
+                    wet.gain.value = val;
         });
         initSlider('sequencer-tempo',
                 cfg.sequencer.tempoMin, cfg.sequencer.tempoMax,

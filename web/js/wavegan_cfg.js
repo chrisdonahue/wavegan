@@ -16,7 +16,10 @@ window.wavegan = window.wavegan || {};
 	    zDim: 100
         },
         audio: {
-            gainDefault: 0.5
+            gainDefault: 0.5,
+            reverbDefault: 0.25,
+            reverbLen: 2,
+            reverbDecay: 10
         },
         ui: {
             canvasFlushDelayMs: 25,

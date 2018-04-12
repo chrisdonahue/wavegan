@@ -29,8 +29,21 @@ button {
     height: 1em;
 }
 
+#gain-slider {
+    display: inline;
+}
+
 #gain-slider input {
-    width: 300px;
+    width: 267px;
+}
+
+#reverb-slider {
+    display: inline;
+    margin-left: 8px;
+}
+
+#reverb-slider input {
+    width: 267px;
 }
 
 /* Loading screen */
