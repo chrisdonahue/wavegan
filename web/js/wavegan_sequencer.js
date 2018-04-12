@@ -165,6 +165,8 @@ window.wavegan = window.wavegan || {};
         // Draw row lines
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 1;
+        ctx.font = '18px sans-serif';
+        ctx.fillStyle = '#ffffff';
         var rowStart = topLeft.x;
         var rowEnd = bottomRight.x;
         for (var j = 0; j < this.numRows + 1; ++j) {
@@ -173,6 +175,7 @@ window.wavegan = window.wavegan || {};
             ctx.moveTo(rowStart, y)
             ctx.lineTo(rowEnd, y);
             ctx.stroke();
+            ctx.fillText('Drum ' + String(j + 1), 0, y + 26);
         }
 
         // Draw columns

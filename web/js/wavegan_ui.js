@@ -34,11 +34,11 @@ window.wavegan = window.wavegan || {};
     };
 
     // Class to handle UI interactions with player/visualizer
-    var Zactor = function (fs, div) {
+    var Zactor = function (fs, div, name) {
         this.canvas = div.children[0];
         this.button = div.children[1];
         this.player = new wavegan.player.ResamplingPlayer(fs);
-        this.visualizer = new wavegan.visualizer.WaveformVisualizer(this.canvas);
+        this.visualizer = new wavegan.visualizer.WaveformVisualizer(this.canvas, name);
         this.animFramesRemaining = 0;
         this.z = null;
         this.Gz = null;
@@ -109,7 +109,7 @@ window.wavegan = window.wavegan || {};
         zactors = [];
         for (var i = 0; i < nzactors; ++i) {
             var div = document.getElementById('zactor' + String(i));
-            zactors.push(new Zactor(audioCtx.sampleRate, div));
+            zactors.push(new Zactor(audioCtx.sampleRate, div, 'Drum ' + String(i + 1)));
         }
 
         // Render initial batch

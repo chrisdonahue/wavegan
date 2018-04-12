@@ -29,7 +29,7 @@ window.wavegan = window.wavegan || {};
             rmsAnimDelayMs: 25
         },
         sequencer: {
-            labelWidth: 100,
+            labelWidth: 80,
             numCols: 16,
             tempoMin: 30,
             tempoMax: 300,

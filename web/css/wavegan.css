@@ -145,6 +145,10 @@ button {
     margin-top: 8px;
 }
 
+#sequencer-canvas {
+    user-select: none;
+}
+
 
 /*
 #sequencer-sliders label {
