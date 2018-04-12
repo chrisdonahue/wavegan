@@ -34,18 +34,32 @@
 	<p><b>Keyboard control:</b> Use keys 1-8 to play sounds. Hold shift while pressing 1-8 to change sound.</p>
 	<p><b>Mouse control:</b> Touch waveform to play sound. Touch "Change" to change sound.</p>
 
+	<div class="slider" id="gain-slider">
+	<label>Volume</label><input type="range" id="gain" min="0" max="10000"></input>
+	</div>
+
 	<div id="zactors">
 	</div>
 
 	<div id="sequencer">
-		<button type="button" id="sequencer-play">Play</button>
-		<button type="button" id="sequencer-stop">Stop</button>
-		<button type="button" id="sequencer-clear">Clear</button>
-		<label>Volume</label><input type="range" id="gain" min="0" max="10000"></input>
-		<label>Tempo</label><input type="range" id="sequencer-tempo" min="0" max="10000"></input>
-		<label>Swing</label><input type="range" id="sequencer-swing" min="0" max="10000"></input>
-		<br>
-		<canvas id="sequencer-canvas" height="320" width="700"></canvas>
+		<div id="sequencer-buttons">
+			<button type="button" id="sequencer-play">Play</button>
+			<button type="button" id="sequencer-stop">Stop</button>
+			<button type="button" id="sequencer-clear">Clear</button>
+		</div>
+
+		<div id="sequencer-sliders">
+			<div class="slider">
+			<label>Tempo</label><input type="range" id="sequencer-tempo" min="0" max="10000"></input>
+			</div>
+			<div class="slider">
+			<label>Swing</label><input type="range" id="sequencer-swing" min="0" max="10000"></input>
+			</div>
+		</div>
+
+		<div id="sequencer-ui">
+			<canvas id="sequencer-canvas" height="320" width="677"></canvas>
+		</div>
 	</div>
 </div>
 

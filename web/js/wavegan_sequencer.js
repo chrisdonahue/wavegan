@@ -63,6 +63,7 @@ window.wavegan = window.wavegan || {};
 
         // Playback state
         this.delayMs = null;
+        this.swing = 0.5;
         this.setTempoBpm(120);
         this.playing = false;
         this.tick = 0;
@@ -83,8 +84,17 @@ window.wavegan = window.wavegan || {};
         // Render grid
         this.render();
 
+        // Calculate swing delay
+        var totalDelay = this.delayMs * 2;
+        if (this.tick % 2 == 0) {
+            var delay = this.swing * totalDelay;
+        }
+        else {
+            var delay = (1 - this.swing) * totalDelay;
+        }
+
         var that = this;
-        setTimeout(function () {that._tick();}, this.delayMs);
+        setTimeout(function () {that._tick();}, delay);
         this.tick += 1;
         this.tick = this.tick % this.numCols;
     };
@@ -221,10 +231,15 @@ window.wavegan = window.wavegan || {};
         var secondsPerCell = 1 / cellsPerSecond;
         this.delayMs = secondsPerCell * 1000;
     };
+    Sequencer.prototype.setSwing = function (swing) {
+        this.swing = swing;
+    };
     Sequencer.prototype.play = function () {
-        this.playing = true;
-        this.tick = 0;
-        this._tick();
+        if (!this.playing) {
+            this.playing = true;
+            this.tick = 0;
+            this._tick();
+        }
     };
     Sequencer.prototype.stop = function () {
         this.playing = false;

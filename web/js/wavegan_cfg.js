@@ -16,7 +16,7 @@ window.wavegan = window.wavegan || {};
 	    zDim: 100
         },
         audio: {
-            gain: 1,
+            gainDefault: 0.5
         },
         ui: {
             canvasFlushDelayMs: 25,
@@ -29,7 +29,11 @@ window.wavegan = window.wavegan || {};
             labelWidth: 100,
             numCols: 16,
             tempoMin: 30,
-            tempoMax: 300
+            tempoMax: 300,
+            tempoDefault: 120,
+            swingMin: 0.5,
+            swingMax: 0.95,
+            swingDefault: 0.5
         }
     };
 

@@ -160,14 +160,25 @@ window.wavegan = window.wavegan || {};
             }
         }
 
-        /*
-        if (key === 74) {
+        // Space bar
+        if (key == 32) {
+            // TODO: Toggle sequencer playing
         }
-        */
     };
 
     // Sequencer state
     var sequencer = null;
+
+    var initSlider = function (sliderId, sliderMin, sliderMax, sliderDefault, callback) {
+        var slider = document.getElementById(sliderId);
+        slider.value = 10000 * ((sliderDefault - sliderMin) / (sliderMax - sliderMin));
+        callback(sliderDefault);
+        slider.addEventListener('input', function (event) {
+            var valUi = slider.value / 10000;
+            var val = (valUi * (sliderMax - sliderMin)) + sliderMin;
+            callback(val);
+        }, true);
+    };
 
     // Run once DOM loads
     var domReady = function () {
@@ -190,7 +201,7 @@ window.wavegan = window.wavegan || {};
         // Initialize audio
         var audioCtx = new window.AudioContext();
         var gainNode = audioCtx.createGain();
-        gainNode.gain.value = cfg.audio.gain;
+        gainNode.gain.value = 1.;
         gainNode.connect(audioCtx.destination);
 
         // (Gross) wait for net to be ready
@@ -222,11 +233,27 @@ window.wavegan = window.wavegan || {};
         });
 
         // Slider callbacks
-        var tempoSlider = document.getElementById('sequencer-tempo');
-        tempoSlider.addEventListener('input', function (event) {
-            var val = tempoSlider.value / tempoSlider.max;
-            var bpm = (val * (cfg.sequencer.tempoMax - cfg.sequencer.tempoMin)) + cfg.sequencer.tempoMin;
-            sequencer.setTempoBpm(bpm);
+        initSlider('gain',
+                0, 1,
+                cfg.audio.gainDefault,
+                function (val) {
+                    gainNode.gain.value = val * val * val * val;
+        });
+        initSlider('sequencer-tempo',
+                cfg.sequencer.tempoMin, cfg.sequencer.tempoMax,
+                cfg.sequencer.tempoDefault,
+                function (val) {
+                    if (sequencer !== null) {
+                        sequencer.setTempoBpm(val);
+                    }
+        });
+        initSlider('sequencer-swing',
+                cfg.sequencer.swingMin, cfg.sequencer.swingMax,
+                cfg.sequencer.swingDefault,
+                function (val) {
+                    if (sequencer !== null) {
+                        sequencer.setSwing(val);
+                    }
         });
 
         // Global resize callback
