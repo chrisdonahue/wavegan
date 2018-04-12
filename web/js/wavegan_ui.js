@@ -210,6 +210,17 @@ window.wavegan = window.wavegan || {};
         };
         setTimeout(wait, 5);
 
+        // Sequencer callbacks
+        document.getElementById('sequencer-play').addEventListener('click', function () {
+            sequencer.play();
+        });
+        document.getElementById('sequencer-stop').addEventListener('click', function () {
+            sequencer.stop();
+        });
+        document.getElementById('sequencer-clear').addEventListener('click', function () {
+            sequencer.clear();
+        });
+
         // Global resize callback
         window.addEventListener('resize', onResize, true);
         onResize();
