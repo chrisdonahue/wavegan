@@ -135,7 +135,6 @@ window.wavegan = window.wavegan || {};
         var bottomRight = this._gridToAbs(this.numCols, this.numRows);
 
         // Draw grid
-        ctx.fillStyle = '#ffffff';
         for (var j = 0; j < this.numRows; ++j) {
             for (var i = 0; i < this.numCols; ++i) {
                 if (this.grid[j][i] > 0) {
@@ -144,6 +143,9 @@ window.wavegan = window.wavegan || {};
                     var cellWidth = cellBottomRight.x - cellTopLeft.x;
                     var cellHeight = cellBottomRight.y - cellTopLeft.y;
 
+                    var hue = (j / (this.numRows - 1)) * 255;
+                    var hsl = 'hsl(' + String(hue) + ', 80%, 60%)';
+                    ctx.fillStyle = hsl;
                     ctx.fillRect(cellTopLeft.x, cellTopLeft.y, cellWidth, cellHeight);
                 }
             }
@@ -183,8 +185,8 @@ window.wavegan = window.wavegan || {};
         var colEnd = bottomRight.y
         for (var i = 0; i < this.numCols + 1; ++i) {
             if (i % 4 == 0) {
-                ctx.strokeStyle = '#ff0099';
-                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 4;
             }
             else {
                 ctx.strokeStyle = '#ffffff';
