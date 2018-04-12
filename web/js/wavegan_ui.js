@@ -34,11 +34,11 @@ window.wavegan = window.wavegan || {};
     };
 
     // Class to handle UI interactions with player/visualizer
-    var Zactor = function (fs, div, name) {
+    var Zactor = function (fs, div, name, color) {
         this.canvas = div.children[0];
         this.button = div.children[1];
         this.player = new wavegan.player.ResamplingPlayer(fs);
-        this.visualizer = new wavegan.visualizer.WaveformVisualizer(this.canvas, name);
+        this.visualizer = new wavegan.visualizer.WaveformVisualizer(this.canvas, name, color);
         this.animFramesRemaining = 0;
         this.z = null;
         this.Gz = null;
@@ -85,11 +85,19 @@ window.wavegan = window.wavegan || {};
     Zactor.prototype.bang = function () {
         this.player.bang();
 
-        this.animFramesRemaining = Math.round(1024 / cfg.ui.rmsAnimDelayMs);
+        var animFramesTot = Math.round(1024 / cfg.ui.rmsAnimDelayMs);
+        this.animFramesRemaining = animFramesTot;
         var lastRemaining = this.animFramesRemaining;
         var that = this;
         var animFrame = function () {
-            that.visualizer.render(that.player.getRmsAmplitude());
+            var rms = that.player.getRmsAmplitude();
+            var initPeriod = animFramesTot - that.animFramesRemaining;
+            if (initPeriod < 8) {
+                var fade = initPeriod / 8;
+                rms = (1 - fade) * 0.25 + fade * rms;
+            }
+            that.visualizer.render(rms);
+
             if (that.animFramesRemaining > 0 && lastRemaining === that.animFramesRemaining) {
                 --that.animFramesRemaining;
                 --lastRemaining;
@@ -109,7 +117,10 @@ window.wavegan = window.wavegan || {};
         zactors = [];
         for (var i = 0; i < nzactors; ++i) {
             var div = document.getElementById('zactor' + String(i));
-            zactors.push(new Zactor(audioCtx.sampleRate, div, 'Drum ' + String(i + 1)));
+            var name = 'Drum ' + String(i + 1);
+            var hue = (i / (nzactors - 1)) * 255;
+            var hsl = 'hsl(' + String(hue) + ', 80%, 60%)';
+            zactors.push(new Zactor(audioCtx.sampleRate, div, name, hsl));
         }
 
         // Render initial batch
