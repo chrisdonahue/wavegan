@@ -27,7 +27,9 @@ window.wavegan = window.wavegan || {};
         },
         sequencer: {
             labelWidth: 100,
-            numCols: 16
+            numCols: 16,
+            tempoMin: 30,
+            tempoMax: 300
         }
     };
 

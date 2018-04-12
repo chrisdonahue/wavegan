@@ -210,7 +210,7 @@ window.wavegan = window.wavegan || {};
         };
         setTimeout(wait, 5);
 
-        // Sequencer callbacks
+        // Sequencer button callbacks
         document.getElementById('sequencer-play').addEventListener('click', function () {
             sequencer.play();
         });
@@ -219,6 +219,14 @@ window.wavegan = window.wavegan || {};
         });
         document.getElementById('sequencer-clear').addEventListener('click', function () {
             sequencer.clear();
+        });
+
+        // Slider callbacks
+        var tempoSlider = document.getElementById('sequencer-tempo');
+        tempoSlider.addEventListener('input', function (event) {
+            var val = tempoSlider.value / tempoSlider.max;
+            var bpm = (val * (cfg.sequencer.tempoMax - cfg.sequencer.tempoMin)) + cfg.sequencer.tempoMin;
+            sequencer.setTempoBpm(bpm);
         });
 
         // Global resize callback
