@@ -110,7 +110,7 @@ window.wavegan = window.wavegan || {};
 
     // Initializer for waveform players/visualizers
     var zactors = null;
-    var initZactors = function (audioCtx) {
+    var initZactors = function (audioCtx, cherries) {
         var nzactors = cfg.ui.zactorNumRows * cfg.ui.zactorNumCols;
 
         // Create zactors
@@ -125,9 +125,17 @@ window.wavegan = window.wavegan || {};
 
         // Render initial batch
         var zs = [];
-        for (var i = 0; i < nzactors; ++i) {
-            zs.push(random_vector());
+        if (cherries === null || cfg.net.cherries.length != nzactors) {
+            for (var i = 0; i < nzactors; ++i) {
+                zs.push(random_vector());
+            }
         }
+        else {
+            for (var i = 0; i < nzactors; ++i) {
+                zs.push(cherries[cfg.net.cherries[i]]);
+            }
+        }
+
         var Gzs = wavegan.net.eval(zs);
         for (var i = 0; i < nzactors; ++i) {
             zactors[i].setPrerendered(zs[i], Gzs[i]);
@@ -240,7 +248,7 @@ window.wavegan = window.wavegan || {};
         // (Gross) wait for net to be ready
         var wait = function() {
             if (wavegan.net.isReady()) {
-                var scriptProcessor = initZactors(audioCtx);
+                var scriptProcessor = initZactors(audioCtx, wavegan.net.getCherries());
                 scriptProcessor.connect(reverbNode);
                 scriptProcessor.connect(dry);
 
