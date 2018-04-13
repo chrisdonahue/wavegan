@@ -29,7 +29,7 @@ window.wavegan = window.wavegan || {};
         for (var j = 0; j < this.numRows; ++j) {
             var row = [];
             for (var i = 0; i < this.numCols; ++i) {
-                row.push(0);
+                row.push(cfg.sequencer.pattern[j][i]);
             }
             this.grid.push(row);
         }

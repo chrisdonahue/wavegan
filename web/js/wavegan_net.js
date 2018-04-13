@@ -151,7 +151,7 @@ window.wavegan = window.wavegan || {};
 
         // Post processing filter
         x = m.reshape(x, [b, 16384, 1]);
-        if (cfg.net.pp_filt) {
+        if (cfg.net.ppFilt) {
             x = m.conv1d(x,
                 net.vars['G/pp_filt/conv1d/kernel'],
                 null,
