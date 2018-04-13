@@ -33,7 +33,6 @@ window.wavegan = window.wavegan || {};
             }
             this.grid.push(row);
         }
-        this.grid[4][3] = 1;
 
         // Render
         this._redrawLines();
