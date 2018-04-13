@@ -13,7 +13,8 @@ window.wavegan = window.wavegan || {};
         net: {
             ckptDir: 'ckpts/drums',
             ppFilt: true,
-	    zDim: 100
+            zDim: 100,
+            cherries: [0, 1, 2, 3, 4, 5, 6, 7]
         },
         audio: {
             gainDefault: 0.5,
@@ -35,7 +36,7 @@ window.wavegan = window.wavegan || {};
             tempoMax: 300,
             tempoDefault: 120,
             swingMin: 0.5,
-            swingMax: 0.95,
+            swingMax: 0.8,
             swingDefault: 0.5
         }
     };

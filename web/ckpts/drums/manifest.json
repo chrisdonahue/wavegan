@@ -94,5 +94,12 @@
       100, 
       16384
     ]
+  },
+  "cherries": {
+    "filename": "cherries",
+    "shape": [
+      65,
+      100
+    ]
   }
 }

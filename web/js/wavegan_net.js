@@ -55,6 +55,27 @@ window.wavegan = window.wavegan || {};
         return net.ready && hw.ready;
     };
 
+    wavegan.net.getCherries = function () {
+        if (!wavegan.net.isReady()) {
+            throw 'Hardware not ready';
+        }
+        if ('cherries' in net.vars) {
+            var cherries = net.vars['cherries'];
+            var _zs = [];
+            for (var i = 0; i < cherries.shape[0]; ++i) {
+                var _z = new Float32Array(cfg.net.zDim);
+                for (var j = 0; j < cfg.net.zDim; ++j) {
+                    _z[j] = cherries.get(i, j);
+                }
+                _zs.push(_z);
+            }
+            return _zs;
+        }
+        else {
+            return null;
+        }
+    };
+
     wavegan.net.eval = function (_z) {
         if (!wavegan.net.isReady()) {
             throw 'Hardware not ready';
