@@ -15,7 +15,10 @@ window.wavegan = window.wavegan || {};
             cfg.debugMsg('User canceled demo (no WebGL)');
         }
 
-        document.getElementById('webgl').removeAttribute('hidden');
+        document.getElementById('canceled').removeAttribute('hidden');
+        document.getElementById('content').removeAttribute('hidden');
+        document.getElementById('overlay').setAttribute('hidden', '');
+
         return;
     }
 
@@ -26,7 +29,10 @@ window.wavegan = window.wavegan || {};
             cfg.debugMsg('User canceled demo (mobile)');
         }
 
-        document.getElementById('webgl').removeAttribute('hidden');
+        document.getElementById('canceled').removeAttribute('hidden');
+        document.getElementById('content').removeAttribute('hidden');
+        document.getElementById('overlay').setAttribute('hidden', '');
+
         return;
     }
 
