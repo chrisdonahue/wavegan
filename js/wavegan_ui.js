@@ -34,11 +34,11 @@ window.wavegan = window.wavegan || {};
     };
 
     // Class to handle UI interactions with player/visualizer
-    var Zactor = function (fs, div) {
+    var Zactor = function (fs, div, name, color) {
         this.canvas = div.children[0];
         this.button = div.children[1];
         this.player = new wavegan.player.ResamplingPlayer(fs);
-        this.visualizer = new wavegan.visualizer.WaveformVisualizer(this.canvas);
+        this.visualizer = new wavegan.visualizer.WaveformVisualizer(this.canvas, name, color);
         this.animFramesRemaining = 0;
         this.z = null;
         this.Gz = null;
@@ -85,11 +85,19 @@ window.wavegan = window.wavegan || {};
     Zactor.prototype.bang = function () {
         this.player.bang();
 
-        this.animFramesRemaining = Math.round(1024 / cfg.ui.rmsAnimDelayMs);
+        var animFramesTot = Math.round(1024 / cfg.ui.rmsAnimDelayMs);
+        this.animFramesRemaining = animFramesTot;
         var lastRemaining = this.animFramesRemaining;
         var that = this;
         var animFrame = function () {
-            that.visualizer.render(that.player.getRmsAmplitude());
+            var rms = that.player.getRmsAmplitude();
+            var initPeriod = animFramesTot - that.animFramesRemaining;
+            if (initPeriod < 8) {
+                var fade = initPeriod / 8;
+                rms = (1 - fade) * 0.25 + fade * rms;
+            }
+            that.visualizer.render(rms);
+
             if (that.animFramesRemaining > 0 && lastRemaining === that.animFramesRemaining) {
                 --that.animFramesRemaining;
                 --lastRemaining;
@@ -109,7 +117,10 @@ window.wavegan = window.wavegan || {};
         zactors = [];
         for (var i = 0; i < nzactors; ++i) {
             var div = document.getElementById('zactor' + String(i));
-            zactors.push(new Zactor(audioCtx.sampleRate, div));
+            var name = 'Drum ' + String(i + 1);
+            var hue = (i / (nzactors - 1)) * 255;
+            var hsl = 'hsl(' + String(hue) + ', 80%, 60%)';
+            zactors.push(new Zactor(audioCtx.sampleRate, div, name, hsl));
         }
 
         // Render initial batch
@@ -137,6 +148,9 @@ window.wavegan = window.wavegan || {};
         return scriptProcessor;
     };
 
+    // Sequencer state
+    var sequencer = null;
+
     // Global resize callback
     var onResize = function (event) {
         var demo = document.getElementById('demo');
@@ -159,6 +173,38 @@ window.wavegan = window.wavegan || {};
                 zactors[zactorid].bang();
             }
         }
+
+        // Space bar
+        if (key == 32) {
+            sequencer.toggle();
+        }
+    };
+
+    var initSlider = function (sliderId, sliderMin, sliderMax, sliderDefault, callback) {
+        var slider = document.getElementById(sliderId);
+        slider.value = 10000 * ((sliderDefault - sliderMin) / (sliderMax - sliderMin));
+        callback(sliderDefault);
+        slider.addEventListener('input', function (event) {
+            var valUi = slider.value / 10000;
+            var val = (valUi * (sliderMax - sliderMin)) + sliderMin;
+            callback(val);
+        }, true);
+    };
+
+    var createReverb = function (audioCtx) {
+        var sampleRate = audioCtx.sampleRate;
+        var reverbLen = Math.floor(sampleRate * cfg.audio.reverbLen);
+        var reverbDcy = cfg.audio.reverbDecay;
+        var impulse = audioCtx.createBuffer(2, reverbLen, sampleRate);
+        var impulseL = impulse.getChannelData(0);
+        var impulseR = impulse.getChannelData(1);
+        for (var i = 0; i < reverbLen; ++i) {
+            impulseL[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / reverbLen, reverbDcy);
+            impulseR[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / reverbLen, reverbDcy);
+        }
+        var reverbNode = audioCtx.createConvolver();
+        reverbNode.buffer = impulse;
+        return reverbNode
     };
 
     // Run once DOM loads
@@ -181,15 +227,27 @@ window.wavegan = window.wavegan || {};
 
         // Initialize audio
         var audioCtx = new window.AudioContext();
+
+        var reverbNode = createReverb(audioCtx);
+        var wet = audioCtx.createGain();
+        var dry = audioCtx.createGain();
         var gainNode = audioCtx.createGain();
-        gainNode.gain.value = cfg.audio.gain;
+        reverbNode.connect(wet);
+        wet.connect(gainNode);
+        dry.connect(gainNode);
         gainNode.connect(audioCtx.destination);
 
         // (Gross) wait for net to be ready
         var wait = function() {
             if (wavegan.net.isReady()) {
                 var scriptProcessor = initZactors(audioCtx);
-                scriptProcessor.connect(gainNode);
+                scriptProcessor.connect(reverbNode);
+                scriptProcessor.connect(dry);
+
+                var seqCanvas = document.getElementById('sequencer-canvas');
+                sequencer = new wavegan.sequencer.Sequencer(seqCanvas, zactors);
+                sequencer.render();
+
                 document.getElementById('overlay').setAttribute('hidden', '');
                 document.getElementById('content').removeAttribute('hidden');
             }
@@ -198,6 +256,48 @@ window.wavegan = window.wavegan || {};
             }
         };
         setTimeout(wait, 5);
+
+        // Sequencer button callbacks
+        document.getElementById('sequencer-play').addEventListener('click', function () {
+            sequencer.play();
+        });
+        document.getElementById('sequencer-stop').addEventListener('click', function () {
+            sequencer.stop();
+        });
+        document.getElementById('sequencer-clear').addEventListener('click', function () {
+            sequencer.clear();
+        });
+
+        // Slider callbacks
+        initSlider('gain',
+                0, 1,
+                cfg.audio.gainDefault,
+                function (val) {
+                    gainNode.gain.value = val * val * val * val;
+        });
+        initSlider('reverb',
+                0, 1,
+                cfg.audio.reverbDefault,
+                function (val) {
+                    dry.gain.value = (1 - val);
+                    wet.gain.value = val;
+        });
+        initSlider('sequencer-tempo',
+                cfg.sequencer.tempoMin, cfg.sequencer.tempoMax,
+                cfg.sequencer.tempoDefault,
+                function (val) {
+                    if (sequencer !== null) {
+                        sequencer.setTempoBpm(val);
+                    }
+        });
+        initSlider('sequencer-swing',
+                cfg.sequencer.swingMin, cfg.sequencer.swingMax,
+                cfg.sequencer.swingDefault,
+                function (val) {
+                    if (sequencer !== null) {
+                        sequencer.setSwing(val);
+                    }
+        });
 
         // Global resize callback
         window.addEventListener('resize', onResize, true);

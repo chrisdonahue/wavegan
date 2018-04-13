@@ -2,6 +2,7 @@ html, body {
     margin: 0px;
     padding: 8px;
     height: 100%;
+    width: 696px;
 }
 
 body {
@@ -10,6 +11,42 @@ body {
     font-family: 'Montserrat', sans-serif;
     font-size: 1em;
 }
+
+button {
+    margin: 0px;
+    padding: 0px;
+    height: 30px;
+    width: 80px;
+    user-select: none;
+}
+
+.slider label {
+    display: inline;
+    margin-right: 8px;
+}
+.slider input {
+    width: 153px;
+    height: 1em;
+}
+
+#gain-slider {
+    display: inline;
+}
+
+#gain-slider input {
+    width: 267px;
+}
+
+#reverb-slider {
+    display: inline;
+    margin-left: 8px;
+}
+
+#reverb-slider input {
+    width: 267px;
+}
+
+/* Loading screen */
 
 #spinner {
     position: absolute;
@@ -52,6 +89,8 @@ body {
     display: none;
 }
 
+/* Zactor grid */
+
 .zactor {
     display: inline-block;
     width: 160px;
@@ -60,21 +99,63 @@ body {
     margin-bottom: 8px;
     padding: 0px;
 }
+
 .zactor canvas {
     display: inline;
     margin: 0px;
     padding: 0px;
     user-select: none;
 }
+
 .zactor button {
     float: left;
-    margin: 0px;
-    padding: 0px;
-    height: 30px;
-    width: 80px;
-    user-select: none;
 }
 
 .row {
     display: block;
 }
+
+#zactors {
+    margin-top: 16px;
+}
+
+/* Sequencer */
+
+#sequencer {
+    margin-top: 16px;
+}
+
+#sequencer button {
+    display: inline-block;
+}
+
+#sequencer-buttons {
+    display: inline-block;
+}
+
+#sequencer-sliders {
+    display: inline-block;
+}
+
+#sequencer-sliders div {
+    display: inline-block;
+}
+
+#sequencer-ui {
+    margin-top: 8px;
+}
+
+#sequencer-canvas {
+    user-select: none;
+}
+
+
+/*
+#sequencer-sliders label {
+    display: inline-block;
+}
+
+#sequencer-sliders input {
+    display: inline-block;
+}
+*/
