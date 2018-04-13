@@ -1,14 +1,13 @@
 html, body {
     margin: 0px;
     padding: 8px;
-    height: 100%;
     width: 696px;
 }
 
 body {
     background-color: #242424;
     color: #dfdfdf;
-    font-family: 'Montserrat', sans-serif;
+    font-family: Arial, Helvetica, sans-serif;
     font-size: 1em;
 }
 
@@ -25,7 +24,7 @@ button {
     margin-right: 8px;
 }
 .slider input {
-    width: 153px;
+    width: 135px;
     height: 1em;
 }
 
@@ -34,7 +33,7 @@ button {
 }
 
 #gain-slider input {
-    width: 267px;
+    width: 240px;
 }
 
 #reverb-slider {
@@ -43,7 +42,7 @@ button {
 }
 
 #reverb-slider input {
-    width: 267px;
+    width: 240px;
 }
 
 /* Loading screen */
@@ -116,7 +115,7 @@ button {
 }
 
 #zactors {
-    margin-top: 16px;
+    margin-top: 24px;
 }
 
 /* Sequencer */
