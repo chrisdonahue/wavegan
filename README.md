@@ -1,9 +1,9 @@
 # WaveGAN
 
-<img src="static/results.png"/>
 <img src="static/wavegan.png"/>
+<img src="static/results.png"/>
 
-TensorFlow implementation of WaveGAN (Donahue et al. 2018). WaveGAN is a GAN approach designed for operation on raw, time-domain audio samples. It is related to the DCGAN approach (Radford et al. 2016), a popular GAN model designed for image synthesis. WaveGAN uses one-dimensional transposed convolutions with longer filters and larger stride than DCGAN, as shown in the figure above.
+Official TensorFlow implementation of WaveGAN (Donahue et al. 2018) [(paper)](https://arxiv.org/abs/1802.04208). WaveGAN is a GAN approach designed for operation on raw, time-domain audio samples. It is related to the DCGAN approach (Radford et al. 2016), a popular GAN model designed for image synthesis. WaveGAN uses one-dimensional transposed convolutions with longer filters and larger stride than DCGAN, as shown in the figure above.
 
 ## Usage
 
@@ -106,4 +106,44 @@ To back up checkpoints every hour (GAN training will occasionally collapse)
 
 ```
 python backup.py ./train 60
+```
+
+### Generation
+
+The training scripts for both WaveGAN and SpecGAN create simple TensorFlow MetaGraphs for generating audio waveforms. These are located in the training directory. A simplest usage is below; see [this Colab notebook](https://colab.research.google.com/drive/1e9o2NB2GDDjadptGr3rwQwTcw-IrFOnm) for additional features.
+
+```py
+import tensorflow as tf
+from IPython.display import display, Audio
+
+# Load the graph
+tf.reset_default_graph()
+saver = tf.train.import_meta_graph('infer.meta')
+graph = tf.get_default_graph()
+sess = tf.InteractiveSession()
+saver.restore(sess, 'model.ckpt')
+
+# Create 50 random latent vectors z
+_z = (np.random.rand(50, 100) * 2.) - 1
+
+# Synthesize G(z)
+z = graph.get_tensor_by_name('z:0')
+G_z = graph.get_tensor_by_name('G_z:0')
+_G_z = sess.run(G_z, {z: _z})
+
+# Play audio in notebook
+display(Audio(_G_z[0], rate=16000))
+```
+
+### Attribution
+
+If you use this dataset in your research, cite via the following BibTeX:
+
+```
+@article{donahue2018wavegan,
+  title={Synthesizing Audio with Generative Adversarial Networks},
+  author={Donahue, Chris and McAuley, Julian and Puckette, Miller},
+  journal={arXiv:1802.04208},
+  year={2018}
+}
 ```
