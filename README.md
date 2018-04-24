@@ -17,13 +17,13 @@ pip install matplotlib
 
 ### Build datasets
 
-You can download the datasets from our paper ...
+You can download the datasets from our paper bundled as TFRecords ...
 
-- [Speech Commands Zero through Nine (SC09)](https://drive.google.com/open?id=1qRdAWmjfWwfWIu-Qk7u9KQKGINC52ZwB)
+- [Speech Commands Zero through Nine (SC09)](https://drive.google.com/open?id=1qRdAWmjfWwfWIu-Qk7u9KQKGINC52ZwB) [(raw WAV files)](http://deepyeti.ucsd.edu/cdonahue/sc09.tar.gz)
 - [Drums](https://drive.google.com/open?id=1nKIWosguCSsEzYomHWfWmmu3RlLTMUIE)
 - [Piano](https://drive.google.com/open?id=1REGUUFhFcp-L_5LngJp4oZouGNBy8DPh)
 
-or build your own from any type of audio files:
+or build your own from directories of audio files:
 
 ```
 python data/make_tfrecord.py \
@@ -134,6 +134,22 @@ _G_z = sess.run(G_z, {z: _z})
 # Play audio in notebook
 display(Audio(_G_z[0], rate=16000))
 ```
+
+### Evaluation
+
+Our [paper](https://arxiv.org/abs/1802.04208) uses Inception score to (roughly) measure model performance. If you would like to compare to our reported numbers directly, you may run [this script](https://github.com/chrisdonahue/wavegan/blob/master/eval/inception/score.py) on a directory of 50,000 WAV files with 16384 samples each.
+
+```
+python score.py --audio_dir wavs```
+
+
+To reproduce our paper results (9.18 +- 0.04) for the SC09 ([download](http://deepyeti.ucsd.edu/cdonahue/sc09.tar.gz)) training dataset, run
+
+```
+python score.py --audio_dir sc09/train  --fix_length --n 18620
+```
+
+
 
 ### Attribution
 
