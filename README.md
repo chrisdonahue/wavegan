@@ -140,7 +140,8 @@ display(Audio(_G_z[0], rate=16000))
 Our [paper](https://arxiv.org/abs/1802.04208) uses Inception score to (roughly) measure model performance. If you would like to compare to our reported numbers directly, you may run [this script](https://github.com/chrisdonahue/wavegan/blob/master/eval/inception/score.py) on a directory of 50,000 WAV files with 16384 samples each.
 
 ```
-python score.py --audio_dir wavs```
+python score.py --audio_dir wavs
+```
 
 
 To reproduce our paper results (9.18 +- 0.04) for the SC09 ([download](http://deepyeti.ucsd.edu/cdonahue/sc09.tar.gz)) training dataset, run
