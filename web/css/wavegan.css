@@ -1,0 +1,160 @@
+html, body {
+    margin: 0px;
+    padding: 8px;
+    width: 696px;
+}
+
+body {
+    background-color: #242424;
+    color: #dfdfdf;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1em;
+}
+
+button {
+    margin: 0px;
+    padding: 0px;
+    height: 30px;
+    width: 80px;
+    user-select: none;
+}
+
+.slider label {
+    display: inline;
+    margin-right: 8px;
+}
+.slider input {
+    width: 135px;
+    height: 1em;
+}
+
+#gain-slider {
+    display: inline;
+}
+
+#gain-slider input {
+    width: 240px;
+}
+
+#reverb-slider {
+    display: inline;
+    margin-left: 8px;
+}
+
+#reverb-slider input {
+    width: 240px;
+}
+
+/* Loading screen */
+
+#spinner {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 1;
+    width: 150px;
+    height: 150px;
+    margin: -75px 0 0 -75px;
+    border: 16px solid #dfdfdf;
+    border-radius: 50%;
+    border-top: 16px solid #3498db;
+    width: 120px;
+    height: 120px;
+    -webkit-animation: spin 2s linear infinite;
+    animation: spin 2s linear infinite;
+}
+
+@-webkit-keyframes spin {
+    0% { -webkit-transform: rotate(0deg); }
+    100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.overlay_txt {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 300px;
+    height: 20px;
+    margin: 120px 0px 0 -116px;
+    font-size: 2em;
+}
+
+#overlay_canceled {
+    display: none;
+}
+
+/* Zactor grid */
+
+.zactor {
+    display: inline-block;
+    width: 160px;
+    height: 120px;
+    margin-right: 8px;
+    margin-bottom: 8px;
+    padding: 0px;
+}
+
+.zactor canvas {
+    display: inline;
+    margin: 0px;
+    padding: 0px;
+    user-select: none;
+}
+
+.zactor button {
+    float: left;
+}
+
+.row {
+    display: block;
+}
+
+#zactors {
+    margin-top: 24px;
+}
+
+/* Sequencer */
+
+#sequencer {
+    margin-top: 16px;
+}
+
+#sequencer button {
+    display: inline-block;
+}
+
+#sequencer-buttons {
+    display: inline-block;
+}
+
+#sequencer-sliders {
+    display: inline-block;
+}
+
+#sequencer-sliders div {
+    display: inline-block;
+}
+
+#sequencer-ui {
+    margin-top: 8px;
+}
+
+#sequencer-canvas {
+    user-select: none;
+}
+
+
+/*
+#sequencer-sliders label {
+    display: inline-block;
+}
+
+#sequencer-sliders input {
+    display: inline-block;
+}
+*/

@@ -1,0 +1,105 @@
+{
+  "G/pp_filt/conv1d/kernel": {
+    "filename": "G_pp_filt_conv1d_kernel", 
+    "shape": [
+      512, 
+      1, 
+      1
+    ]
+  }, 
+  "G/upconv_0/conv2d_transpose/bias": {
+    "filename": "G_upconv_0_conv2d_transpose_bias", 
+    "shape": [
+      512
+    ]
+  }, 
+  "G/upconv_0/conv2d_transpose/kernel": {
+    "filename": "G_upconv_0_conv2d_transpose_kernel", 
+    "shape": [
+      1, 
+      25, 
+      512, 
+      1024
+    ]
+  }, 
+  "G/upconv_1/conv2d_transpose/bias": {
+    "filename": "G_upconv_1_conv2d_transpose_bias", 
+    "shape": [
+      256
+    ]
+  }, 
+  "G/upconv_1/conv2d_transpose/kernel": {
+    "filename": "G_upconv_1_conv2d_transpose_kernel", 
+    "shape": [
+      1, 
+      25, 
+      256, 
+      512
+    ]
+  }, 
+  "G/upconv_2/conv2d_transpose/bias": {
+    "filename": "G_upconv_2_conv2d_transpose_bias", 
+    "shape": [
+      128
+    ]
+  }, 
+  "G/upconv_2/conv2d_transpose/kernel": {
+    "filename": "G_upconv_2_conv2d_transpose_kernel", 
+    "shape": [
+      1, 
+      25, 
+      128, 
+      256
+    ]
+  }, 
+  "G/upconv_3/conv2d_transpose/bias": {
+    "filename": "G_upconv_3_conv2d_transpose_bias", 
+    "shape": [
+      64
+    ]
+  }, 
+  "G/upconv_3/conv2d_transpose/kernel": {
+    "filename": "G_upconv_3_conv2d_transpose_kernel", 
+    "shape": [
+      1, 
+      25, 
+      64, 
+      128
+    ]
+  }, 
+  "G/upconv_4/conv2d_transpose/bias": {
+    "filename": "G_upconv_4_conv2d_transpose_bias", 
+    "shape": [
+      1
+    ]
+  }, 
+  "G/upconv_4/conv2d_transpose/kernel": {
+    "filename": "G_upconv_4_conv2d_transpose_kernel", 
+    "shape": [
+      1, 
+      25, 
+      1, 
+      64
+    ]
+  }, 
+  "G/z_project/dense/bias": {
+    "filename": "G_z_project_dense_bias", 
+    "shape": [
+      16384
+    ]
+  }, 
+  "G/z_project/dense/kernel": {
+    "filename": "G_z_project_dense_kernel", 
+    "shape": [
+      100, 
+      16384
+    ]
+  },
+  "cherries": {
+    "filename": "cherries",
+    "shape": [
+      65,
+      100
+    ]
+  }
+}
