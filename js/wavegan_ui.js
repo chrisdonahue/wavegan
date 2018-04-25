@@ -76,8 +76,13 @@ window.wavegan = window.wavegan || {};
         this.setPrerendered(z, Gz);
     };
     Zactor.prototype.randomize = function () {
+        var oldGain = gainNode.gain.value;
+        gainNode.gain.value = 0;
+
         var z = random_vector();
         this.setZ(z);
+
+        gainNode.gain.value = oldGain;
     };
     Zactor.prototype.readBlock = function (buffer) {
         this.player.readBlock(buffer);
@@ -216,6 +221,7 @@ window.wavegan = window.wavegan || {};
     };
 
     // Run once DOM loads
+    var gainNode = null;
     var domReady = function () {
         cfg.debugMsg('DOM ready');
 
@@ -239,7 +245,7 @@ window.wavegan = window.wavegan || {};
         var reverbNode = createReverb(audioCtx);
         var wet = audioCtx.createGain();
         var dry = audioCtx.createGain();
-        var gainNode = audioCtx.createGain();
+        gainNode = audioCtx.createGain();
         reverbNode.connect(wet);
         wet.connect(gainNode);
         dry.connect(gainNode);
