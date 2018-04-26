@@ -10,6 +10,7 @@ Official TensorFlow implementation of WaveGAN (Donahue et al. 2018) ([paper](htt
 ### Requirements
 
 ```
+# Will likely also work with newer versions of Tensorflow
 pip install tensorflow-gpu==1.4.0
 pip install scipy
 pip install matplotlib
@@ -19,7 +20,7 @@ pip install matplotlib
 
 You can download the datasets from our paper bundled as TFRecords ...
 
-- [Speech Commands Zero through Nine (SC09)](https://drive.google.com/open?id=1qRdAWmjfWwfWIu-Qk7u9KQKGINC52ZwB) [(raw WAV files)](http://deepyeti.ucsd.edu/cdonahue/sc09.tar.gz)
+- [Speech Commands Zero through Nine (SC09)](https://drive.google.com/open?id=1qRdAWmjfWwfWIu-Qk7u9KQKGINC52ZwB) alternate link: [(raw WAV files)](http://deepyeti.ucsd.edu/cdonahue/sc09.tar.gz)
 - [Drums](https://drive.google.com/open?id=1nKIWosguCSsEzYomHWfWmmu3RlLTMUIE)
 - [Piano](https://drive.google.com/open?id=1REGUUFhFcp-L_5LngJp4oZouGNBy8DPh)
 
@@ -154,7 +155,7 @@ python score.py --audio_dir sc09/train  --fix_length --n 18620
 
 ### Attribution
 
-If you use this dataset in your research, cite via the following BibTeX:
+If you use this code in your research, cite via the following BibTeX:
 
 ```
 @article{donahue2018wavegan,
