@@ -34,6 +34,7 @@ window.wavegan = window.wavegan || {};
     };
 
     // Class to handle UI interactions with player/visualizer
+    var globalAudioCtxChromeWorkaround = null;
     var Zactor = function (fs, div, name, color) {
         this.canvas = div.children[0];
         this.button = div.children[1];
@@ -88,6 +89,12 @@ window.wavegan = window.wavegan || {};
         this.player.readBlock(buffer);
     };
     Zactor.prototype.bang = function () {
+        if (globalAudioCtxChromeWorkaround.state === null)
+            return;
+        if (globalAudioCtxChromeWorkaround.state === 'suspended') {
+            globalAudioCtxChromeWorkaround.resume();
+        }
+
         this.player.bang();
 
         var animFramesTot = Math.round(1024 / cfg.ui.rmsAnimDelayMs);
@@ -241,6 +248,7 @@ window.wavegan = window.wavegan || {};
 
         // Initialize audio
         var audioCtx = new window.AudioContext();
+        globalAudioCtxChromeWorkaround = audioCtx;
 
         var reverbNode = createReverb(audioCtx);
         var wet = audioCtx.createGain();
