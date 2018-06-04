@@ -50,7 +50,7 @@ if __name__  == '__main__':
   random.shuffle(audio_fps)
 
   if args.nshards > 1:
-    npershard = int(len(audio_fps) // (args.nshards - 1))
+    npershard = max(int(len(audio_fps) // (args.nshards - 1)), 1)
   else:
     npershard = len(audio_fps)
 
@@ -90,6 +90,9 @@ if __name__  == '__main__':
   for i, start_idx in tqdm(enumerate(range(0, len(audio_fps), npershard))):
     shard_name = '{}-{}-of-{}.tfrecord'.format(args.name, str(i).zfill(len(str(args.nshards))), args.nshards)
     shard_fp = os.path.join(args.out_dir, shard_name)
+
+    if not os.path.isdir(args.out_dir):
+      os.makedirs(args.out_dir)
 
     writer = tf.python_io.TFRecordWriter(shard_fp)
 
