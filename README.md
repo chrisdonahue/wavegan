@@ -22,7 +22,7 @@ You can download the datasets from our paper bundled as TFRecords ...
 
 - [Speech Commands Zero through Nine (SC09)](https://drive.google.com/open?id=1qRdAWmjfWwfWIu-Qk7u9KQKGINC52ZwB) alternate link: [(raw WAV files)](http://deepyeti.ucsd.edu/cdonahue/sc09.tar.gz)
 - [Drums](https://drive.google.com/open?id=1nKIWosguCSsEzYomHWfWmmu3RlLTMUIE)
-- [Piano](https://drive.google.com/open?id=1REGUUFhFcp-L_5LngJp4oZouGNBy8DPh)
+- [Piano](https://drive.google.com/open?id=1REGUUFhFcp-L_5LngJp4oZouGNBy8DPh) alternate link: [(raw WAV files)](http://deepyeti.ucsd.edu/cdonahue/mancini_piano.tar.gz)
 
 or build your own from directories of audio files:
 
