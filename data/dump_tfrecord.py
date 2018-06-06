@@ -7,6 +7,9 @@ import tensorflow as tf
 
 out_dir, tfrecord_fps = sys.argv[1], sys.argv[2:]
 
+if not os.path.isdir(out_dir):
+  os.makedirs(out_dir)
+
 def _mapper(example_proto):
   features = {
       'samples': tf.FixedLenSequenceFeature([1], tf.float32, allow_missing=True),

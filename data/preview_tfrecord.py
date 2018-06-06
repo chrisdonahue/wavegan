@@ -9,6 +9,9 @@ import tensorflow as tf
 
 tfrecord_fp, out_dir = sys.argv[1:]
 
+if not os.is_dir(out_dir):
+  os.makedirs(out_dir)
+
 def _mapper(example_proto):
   features = {
       'id': tf.FixedLenSequenceFeature([], tf.string, allow_missing=True),
