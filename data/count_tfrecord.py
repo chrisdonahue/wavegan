@@ -37,10 +37,15 @@ with tf.Session() as sess:
       nsamps += _xs[0]
     except:
       break
-  print n
-  print nsamps
-  print nsamps / 16000.
-  print nsamps / 16000. / 3600.
 
-for label, count in label_counts.items():
-  print label, count, count / float(n)
+print '-' * 80
+print 'Number of examples: {}'.format(n)
+print 'Number of audio samples: {}'.format(nsamps)
+print 'Number of seconds: {}'.format(nsamps / 16000.)
+print 'Number of hours: {}'.format(nsamps / 16000. / 3600.)
+
+if len(label_counts) > 1:
+  print '-' * 80
+  print 'Labels'
+  for label, count in label_counts.items():
+    print '{}, count {}, proportion {}'.format(label, count, count / float(n))
