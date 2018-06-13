@@ -1,3 +1,4 @@
+from __future__ import print_function
 import cPickle as pickle
 import os
 import time
@@ -5,8 +6,11 @@ import time
 import numpy as np
 import tensorflow as tf
 
+from six.moves import xrange
+
 import loader
 from specgan import SpecGANGenerator, SpecGANDiscriminator
+from functools import reduce
 
 
 """
@@ -109,15 +113,15 @@ def train(fps, args):
   G_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='G')
 
   # Print G summary
-  print '-' * 80
-  print 'Generator vars'
+  print('-' * 80)
+  print('Generator vars')
   nparams = 0
   for v in G_vars:
     v_shape = v.get_shape().as_list()
     v_n = reduce(lambda x, y: x * y, v_shape)
     nparams += v_n
-    print '{} ({}): {}'.format(v.get_shape().as_list(), v_n, v.name)
-  print 'Total params: {} ({:.2f} MB)'.format(nparams, (float(nparams) * 4) / (1024 * 1024))
+    print('{} ({}): {}'.format(v.get_shape().as_list(), v_n, v.name))
+  print('Total params: {} ({:.2f} MB)'.format(nparams, (float(nparams) * 4) / (1024 * 1024)))
 
   # Summarize
   x_gl = f_to_t(x, args.data_moments_mean, args.data_moments_std, args.specgan_ngl)
@@ -140,16 +144,16 @@ def train(fps, args):
   D_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='D')
 
   # Print D summary
-  print '-' * 80
-  print 'Discriminator vars'
+  print('-' * 80)
+  print('Discriminator vars')
   nparams = 0
   for v in D_vars:
     v_shape = v.get_shape().as_list()
     v_n = reduce(lambda x, y: x * y, v_shape)
     nparams += v_n
-    print '{} ({}): {}'.format(v.get_shape().as_list(), v_n, v.name)
-  print 'Total params: {} ({:.2f} MB)'.format(nparams, (float(nparams) * 4) / (1024 * 1024))
-  print '-' * 80
+    print('{} ({}): {}'.format(v.get_shape().as_list(), v_n, v.name))
+  print('Total params: {} ({:.2f} MB)'.format(nparams, (float(nparams) * 4) / (1024 * 1024)))
+  print('-' * 80)
 
   # Make fake discriminator
   with tf.name_scope('D_G_z'), tf.variable_scope('D', reuse=True):
@@ -414,7 +418,7 @@ def preview(args):
   while True:
     latest_ckpt_fp = tf.train.latest_checkpoint(args.train_dir)
     if latest_ckpt_fp != ckpt_fp:
-      print 'Preview: {}'.format(latest_ckpt_fp)
+      print('Preview: {}'.format(latest_ckpt_fp))
 
       with tf.Session() as sess:
         saver.restore(sess, latest_ckpt_fp)
@@ -428,7 +432,7 @@ def preview(args):
 
       summary_writer.add_summary(_fetches['summaries'], _step)
 
-      print 'Done'
+      print('Done')
 
       ckpt_fp = latest_ckpt_fp
 
@@ -494,7 +498,7 @@ def incept(args):
   while True:
     latest_ckpt_fp = tf.train.latest_checkpoint(args.train_dir)
     if latest_ckpt_fp != ckpt_fp:
-      print 'Incept: {}'.format(latest_ckpt_fp)
+      print('Incept: {}'.format(latest_ckpt_fp))
 
       sess = tf.Session(graph=gan_graph)
 
@@ -535,7 +539,7 @@ def incept(args):
 
       sess.close()
 
-      print 'Done'
+      print('Done')
 
       ckpt_fp = latest_ckpt_fp
 

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import glob
 import os
 import sys
@@ -23,8 +24,8 @@ for split_name, split in zip(['train', 'valid', 'test'], [train_fps, valid_fps, 
     out_fp = os.path.join(out_dir, split_name, '{}_{}'.format(label, wav_name))
 
     if dry_run:
-      print '-' * 80
-      print wav_fp
-      print out_fp
+      print('-' * 80)
+      print(wav_fp)
+      print(out_fp)
     else:
       os.rename(wav_fp, out_fp)

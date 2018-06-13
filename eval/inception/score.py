@@ -1,5 +1,8 @@
+from __future__ import print_function
 import numpy as np
 import tensorflow as tf
+
+from six.moves import xrange
 
 
 def inception_score(
@@ -144,12 +147,12 @@ if __name__ == '__main__':
       batch_size=args.batch_size,
       tf_ffmpeg_ext=args.tf_ffmpeg_ext,
       fix_length=args.fix_length)
-  print 'Inception score: {} +- {}'.format(mean, std)
+  print('Inception score: {} +- {}'.format(mean, std))
 
-  print 'p(y)'
+  print('p(y)')
   for i in xrange(10):
     n = len(filter(lambda x: x == i, labels))
-    print '{}: {}'.format(i, n / float(args.n))
+    print('{}: {}'.format(i, n / float(args.n)))
 
   # Save labels
   if args.labels_fp is not None:

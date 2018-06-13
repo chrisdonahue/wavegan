@@ -1,12 +1,15 @@
+from __future__ import print_function
 import cPickle as pickle
 import os
 import time
 
 import numpy as np
 import tensorflow as tf
+from six.moves import xrange
 
 import loader
 from wavegan import WaveGANGenerator, WaveGANDiscriminator
+from functools import reduce
 
 
 """
@@ -36,15 +39,15 @@ def train(fps, args):
   G_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='G')
 
   # Print G summary
-  print '-' * 80
-  print 'Generator vars'
+  print('-' * 80)
+  print('Generator vars')
   nparams = 0
   for v in G_vars:
     v_shape = v.get_shape().as_list()
     v_n = reduce(lambda x, y: x * y, v_shape)
     nparams += v_n
-    print '{} ({}): {}'.format(v.get_shape().as_list(), v_n, v.name)
-  print 'Total params: {} ({:.2f} MB)'.format(nparams, (float(nparams) * 4) / (1024 * 1024))
+    print('{} ({}): {}'.format(v.get_shape().as_list(), v_n, v.name))
+  print('Total params: {} ({:.2f} MB)'.format(nparams, (float(nparams) * 4) / (1024 * 1024)))
 
   # Summarize
   tf.summary.audio('x', x, _FS)
@@ -62,16 +65,16 @@ def train(fps, args):
   D_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='D')
 
   # Print D summary
-  print '-' * 80
-  print 'Discriminator vars'
+  print('-' * 80)
+  print('Discriminator vars')
   nparams = 0
   for v in D_vars:
     v_shape = v.get_shape().as_list()
     v_n = reduce(lambda x, y: x * y, v_shape)
     nparams += v_n
-    print '{} ({}): {}'.format(v.get_shape().as_list(), v_n, v.name)
-  print 'Total params: {} ({:.2f} MB)'.format(nparams, (float(nparams) * 4) / (1024 * 1024))
-  print '-' * 80
+    print('{} ({}): {}'.format(v.get_shape().as_list(), v_n, v.name))
+  print('Total params: {} ({:.2f} MB)'.format(nparams, (float(nparams) * 4) / (1024 * 1024)))
+  print('-' * 80)
 
   # Make fake discriminator
   with tf.name_scope('D_G_z'), tf.variable_scope('D', reuse=True):
@@ -314,7 +317,7 @@ def preview(args):
   feeds = {}
   feeds[graph.get_tensor_by_name('z:0')] = _zs
   feeds[graph.get_tensor_by_name('flat_pad:0')] = _WINDOW_LEN // 2
-  fetches =  {}
+  fetches = {}
   fetches['step'] = tf.train.get_or_create_global_step()
   fetches['G_z'] = graph.get_tensor_by_name('G_z:0')
   fetches['G_z_flat_int16'] = graph.get_tensor_by_name('G_z_flat_int16:0')
@@ -341,7 +344,7 @@ def preview(args):
   while True:
     latest_ckpt_fp = tf.train.latest_checkpoint(args.train_dir)
     if latest_ckpt_fp != ckpt_fp:
-      print 'Preview: {}'.format(latest_ckpt_fp)
+      print('Preview: {}'.format(latest_ckpt_fp))
 
       with tf.Session() as sess:
         saver.restore(sess, latest_ckpt_fp)
@@ -362,16 +365,16 @@ def preview(args):
         plt.title('Digital filter frequncy response')
         ax1 = fig.add_subplot(111)
 
-	plt.plot(w, 20 * np.log10(abs(h)), 'b')
-	plt.ylabel('Amplitude [dB]', color='b')
-	plt.xlabel('Frequency [rad/sample]')
+        plt.plot(w, 20 * np.log10(abs(h)), 'b')
+        plt.ylabel('Amplitude [dB]', color='b')
+        plt.xlabel('Frequency [rad/sample]')
 
-	ax2 = ax1.twinx()
-	angles = np.unwrap(np.angle(h))
-	plt.plot(w, angles, 'g')
-	plt.ylabel('Angle (radians)', color='g')
-	plt.grid()
-	plt.axis('tight')
+        ax2 = ax1.twinx()
+        angles = np.unwrap(np.angle(h))
+        plt.plot(w, angles, 'g')
+        plt.ylabel('Angle (radians)', color='g')
+        plt.grid()
+        plt.axis('tight')
 
         _pp_fp = os.path.join(preview_dir, '{}_ppfilt.png'.format(str(_step).zfill(8)))
         plt.savefig(_pp_fp)
@@ -380,7 +383,7 @@ def preview(args):
           _summary = sess.run(pp_summary, {pp_fp: _pp_fp})
           summary_writer.add_summary(_summary, _step)
 
-      print 'Done'
+      print('Done')
 
       ckpt_fp = latest_ckpt_fp
 
@@ -445,7 +448,7 @@ def incept(args):
   while True:
     latest_ckpt_fp = tf.train.latest_checkpoint(args.train_dir)
     if latest_ckpt_fp != ckpt_fp:
-      print 'Incept: {}'.format(latest_ckpt_fp)
+      print('Incept: {}'.format(latest_ckpt_fp))
 
       sess = tf.Session(graph=gan_graph)
 
@@ -486,7 +489,7 @@ def incept(args):
 
       sess.close()
 
-      print 'Done'
+      print('Done')
 
       ckpt_fp = latest_ckpt_fp
 

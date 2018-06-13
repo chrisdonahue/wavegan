@@ -1,3 +1,4 @@
+from __future__ import print_function
 if __name__ == '__main__':
   import glob
   import os
@@ -16,7 +17,7 @@ if __name__ == '__main__':
     os.makedirs(backup_dir)
 
   while tf.train.latest_checkpoint(train_dir) is None:
-    print 'Waiting for first checkpoint'
+    print('Waiting for first checkpoint')
     time.sleep(1)
 
   while True:
@@ -28,9 +29,9 @@ if __name__ == '__main__':
     for fp in glob.glob(latest_ckpt + '*'):
       _, name = os.path.split(fp)
       backup_fp = os.path.join(backup_dir, name)
-      print '{}->{}'.format(fp, backup_fp)
+      print('{}->{}'.format(fp, backup_fp))
       shutil.copyfile(fp, backup_fp)
-    print '-' * 80
+    print('-' * 80)
 
     # Sleep for an hour
     time.sleep(nsec)

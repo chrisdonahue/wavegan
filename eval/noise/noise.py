@@ -1,3 +1,4 @@
+from __future__ import print_function
 
 if __name__ == '__main__':
   import argparse
@@ -53,4 +54,4 @@ if __name__ == '__main__':
     X_mag = np.log(X_mag + 1e-6)
   X_weighted_mean = np.average(X_mag, weights=noise_env, axis=1)
 
-  print '{} +- {}'.format(np.mean(X_weighted_mean), np.std(X_weighted_mean))
+  print('{} +- {}'.format(np.mean(X_weighted_mean), np.std(X_weighted_mean)))

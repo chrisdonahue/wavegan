@@ -1,3 +1,4 @@
+from __future__ import print_function
 import tensorflow as tf
 from sklearn.neighbors import NearestNeighbors
 import numpy as np
@@ -11,15 +12,15 @@ def nn_dist(train_set, query_set, exclude_self):
   query_set = np.reshape(query_set, [query_set.shape[0], -1])
 
   # Create and query model
-  print 'Creating model'
+  print('Creating model')
   start = time.time()
   model = NearestNeighbors(n_neighbors=2 if exclude_self else 1, algorithm='ball_tree').fit(train_set)
-  print 'Took {} seconds'.format(time.time() - start)
+  print('Took {} seconds'.format(time.time() - start))
 
-  print 'Querying model'
+  print('Querying model')
   start = time.time()
   dists, _ = model.kneighbors(query_set)
-  print 'Took {} seconds'.format(time.time() - start)
+  print('Took {} seconds'.format(time.time() - start))
 
   # If specified, exclude first nearest neighbor (duplicate) if it is nonzero
   if exclude_self:
@@ -57,4 +58,4 @@ if __name__ == '__main__':
     query_set = pickle.load(f)
 
   mean, std = nn_dist(train_set, query_set, args.train_set == args.query_set)
-  print 'Similarity: {} +- {}'.format(mean, std)
+  print('Similarity: {} +- {}'.format(mean, std))

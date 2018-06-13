@@ -1,3 +1,4 @@
+from __future__ import print_function
 batch_size = 8
 _WINDOW_LEN = 16384
 
@@ -50,12 +51,12 @@ with tf.Session() as sess:
   _xs = sess.run(xs)
 
   for i, (_wav_id, _wav_label, _wav_slice, _wav, _wav_len) in enumerate(zip(*_xs)):
-    print '-' * 80
-    print i
-    print 'ID: {}'.format(_wav_id)
-    print 'Label: {}'.format(_wav_label)
-    print 'Slice #: {}'.format(_wav_slice)
-    print 'Len: {}'.format(_wav_len)
+    print('-' * 80)
+    print(i)
+    print('ID: {}'.format(_wav_id))
+    print('Label: {}'.format(_wav_label))
+    print('Slice #: {}'.format(_wav_slice))
+    print('Len: {}'.format(_wav_len))
 
     out_fp = os.path.join(out_dir, '{}.wav'.format(str(i).zfill(2)))
     wavwrite(out_fp, 16000, _wav)
