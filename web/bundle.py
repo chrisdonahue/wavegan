@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import shutil
 
@@ -16,7 +17,7 @@ if os.path.exists(bundle_dir):
 
 for path in paths:
   out_path = os.path.join(bundle_dir, path)
-  print '{}->{}'.format(path, out_path)
+  print('{}->{}'.format(path, out_path))
 
   if os.path.isdir(path):
     shutil.copytree(path, out_path)

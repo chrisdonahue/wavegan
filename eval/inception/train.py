@@ -1,6 +1,9 @@
+from __future__ import print_function
 import time
 
 import tensorflow as tf
+
+from six.moves import xrange
 
 
 def model(x, nlogits, train=False):
@@ -165,7 +168,7 @@ def eval(fps, args):
     while True:
       latest_ckpt_fp = tf.train.latest_checkpoint(args.train_dir)
       if latest_ckpt_fp != ckpt_fp:
-        print 'Preview: {}'.format(latest_ckpt_fp)
+        print('Preview: {}'.format(latest_ckpt_fp))
 
         with tf.Session() as sess:
           _step, _acc = eval_ckpt_fp(sess, latest_ckpt_fp)
@@ -173,7 +176,7 @@ def eval(fps, args):
             saver.save(sess, os.path.join(eval_dir, 'best_acc'), _step)
             _best_acc = _acc
 
-        print 'Done'
+        print('Done')
 
         ckpt_fp = latest_ckpt_fp
 
@@ -231,7 +234,7 @@ def train(fps, args):
   with tf.variable_scope('classifier'):
     logits = model(x, len(args.data_labels), train=True)
   for v in tf.global_variables():
-    print v.get_shape(), v.name
+    print(v.get_shape(), v.name)
 
   xent = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=y)
   xent_mean = tf.reduce_mean(xent)
