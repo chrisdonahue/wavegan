@@ -151,7 +151,7 @@ if __name__ == '__main__':
 
   print('p(y)')
   for i in xrange(10):
-    n = len(filter(lambda x: x == i, labels))
+    n = len([x for x in labels if x == i])
     print('{}: {}'.format(i, n / float(args.n)))
 
   # Save labels
