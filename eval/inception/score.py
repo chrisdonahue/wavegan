@@ -51,8 +51,9 @@ def inception_score(
         fs, _x = wavread(audio_fp)
         if fs != 16000:
           raise Exception('Invalid sample rate ({})'.format(fs))
-        _x = _x.astype(np.float32)
-        _x /= 32767.
+        if _x.dtype==np.int16:
+            _x = _x.astype(np.float32)
+            _x /= 32767.
 
       if _x.ndim != 1:
         raise Exception('Invalid shape ({})'.format(_x.shape))
