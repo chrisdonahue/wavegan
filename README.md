@@ -1,51 +1,73 @@
-# WaveGAN
+# WaveGAN (v2)
+
+Official implementation of **WaveGAN**, a machine learning algorithm which learns to generate raw audio waveforms.
+
+**UPDATE (2/2/19)**: We have made substantial improvements to this repository in response to common requests:
+- **Added streaming data loader allowing you to train a WaveGAN on MP3s/WAVs/OGGs/etc. without preprocessing**
+- **Added ability to train WaveGANs capable of generating longer audio examples (up to 4 seconds at 16kHz)**
+- Added support for any audio sample rate
+- Added support for multi-channel audio
+- Compatibility with Python 3 and Tensorflow 1.12.0
+- Old (v1) version still available at [this tag](https://github.com/chrisdonahue/wavegan/tree/v1)
 
 <img src="static/wavegan.png"/>
+
+This is the official TensorFlow implementation of WaveGAN (Donahue et al. 2018) ([paper](https://arxiv.org/abs/1802.04208)) ([demo](https://chrisdonahue.com/wavegan)) ([sound examples](http://wavegan-v1.s3-website-us-east-1.amazonaws.com)). WaveGAN is a machine learning algorithm which learns to synthesize raw waveform audio by observing many examples of real audio. WaveGAN is comparable to the popular DCGAN approach (Radford et al. 2016) for learning to generate images.
+
+In this repository, we include an implementation of WaveGAN capable of learning to generate up to 4 seconds of audio at 16kHz. For comparison, we also include an implementation of SpecGAN, an approach to audio generation which applies image-generating GANs to image-like audio spectrograms.
+
 <img src="static/results.png"/>
 
-Official TensorFlow implementation of WaveGAN (Donahue et al. 2018) ([paper](https://arxiv.org/abs/1802.04208)) ([demo](https://chrisdonahue.github.io/wavegan/)) ([sound examples](http://wavegan-v1.s3-website-us-east-1.amazonaws.com)). WaveGAN is a GAN approach designed for operation on raw, time-domain audio samples. It is related to the DCGAN approach (Radford et al. 2016), a popular GAN model designed for image synthesis. WaveGAN uses one-dimensional transposed convolutions with longer filters and larger stride than DCGAN, as shown in the figure above.
+WaveGAN is capable of learning to synthesize audio in many different sound domains. In the above figure, we visualize real and WaveGAN-generated audio of speech, bird vocalizations, drum sound effects, and piano excerpts. These sound examples and more can be heard [here](http://wavegan-v1.s3-website-us-east-1.amazonaws.com).
 
-## Usage
-
-### Requirements
+## Requirements
 
 ```
-# Will likely also work with newer versions of Tensorflow
-pip install tensorflow-gpu==1.4.0
-pip install scipy
-pip install matplotlib
+pip install tensorflow-gpu==1.12.0
+pip install scipy==1.0.0
+pip install matplotlib==3.0.2
+pip install librosa==0.6.2
 ```
 
-### Build datasets
+## Datasets
 
-You can download the datasets from our paper bundled as TFRecords ...
+WaveGAN can now be trained on datasets of arbitrary audio files (previously required preprocessing). You can use any folder containing audio, but here are a few example datasets to help you get started:
 
-- [Speech Commands Zero through Nine (SC09)](https://drive.google.com/open?id=1qRdAWmjfWwfWIu-Qk7u9KQKGINC52ZwB) alternate link: [(raw WAV files)](http://deepyeti.ucsd.edu/cdonahue/sc09.tar.gz)
-- [Drums](https://drive.google.com/open?id=1nKIWosguCSsEzYomHWfWmmu3RlLTMUIE)
-- [Piano](https://drive.google.com/open?id=1REGUUFhFcp-L_5LngJp4oZouGNBy8DPh) alternate link: [(raw WAV files)](http://deepyeti.ucsd.edu/cdonahue/mancini_piano.tar.gz)
+- [Speech Commands Zero through Nine (SC09)](http://deepyeti.ucsd.edu/cdonahue/wavegan/data/sc09.tar.gz)
+- [Drum sound effects](http://deepyeti.ucsd.edu/cdonahue/wavegan/data/drums.tar.gz)
+- [Bach piano performances](http://deepyeti.ucsd.edu/cdonahue/wavegan/data/mancini_piano.tar.gz)
 
-or build your own from directories of audio files:
+## Train a WaveGAN
 
-```
-python data/make_tfrecord.py \
-	/my/audio/folder/trainset \
-	./data/customdataset \
-	--ext mp3 \
-	--fs 16000 \
-	--nshards 64 \
-	--slice_len 1.5 \
-```
-
-### Train WaveGAN
-
-To begin (or resume) training
+To begin (or resume) training on GPU:
 
 ```
+export CUDA_VISIBLE_DEVICES="0"
 python train_wavegan.py train ./train \
-	--data_dir ./data/customdataset
+	--data_dir ./data/dir_with_mp3s \
 ```
 
-If your results are unsatisfactory, try adding a post-processing filter with `--wavegan_genr_pp` or removing phase shuffle with `--wavegan_disc_phaseshuffle 0`. 
+We currently do not support training on multiple GPUs. If your machine has multiple GPUs, make sure to set the `CUDA_VISIBLE_DEVICES` flag as shown above.
+
+While you can *technically* train a WaveGAN on CPU, it is prohibitively slow and not recommended. If you do attempt this, add the flag `--data_prefetch_gpu_num -1`.
+
+### Data considerations
+
+The above training command is appropriate for extracting training slices from e.g. a folder consisting of music MP3s. If you instead have e.g. a folder consisting of individual drum sound effects, use the flag `--data_first_slice` to only extract the first slice from each audio file.
+
+If your dataset consists exclusively of "standard" WAV files (16-bit signed PCM or 32-bit float), you can use the flag `--data_fast_wav` which will use `scipy` (faster) to decode your audio instead of `librosa`. This may slightly increase training speed.
+
+If you want to change the generation length, set `--data_slice_len` to `16384`, `32768`, or `65536` to generate that many audio samples. If you choose a larger generation length, you will likely want to reduce the number of model parameters to train more quickly (e.g. `--wavegan_dim 32`). You can also adjust the sampling rate using `--data_sample_rate` which will effectively change the generation length.
+
+If you have stereo (or multi-channel) audio, adjust `--data_num_channels` as needed. If you are modeling more than 2 channels, each audio file must have the exact number of channels specified.
+
+If you want to normalize each audio file before training, set `--data_normalize`.
+
+### Quality considerations
+
+If your results are too noisy, try adding a post-processing filter with `--wavegan_genr_pp`. You may also want to change the amount of or remove phase shuffle using `--wavegan_disc_phaseshuffle 0`. Increasing either the model size (`--wavegan_dim`) or filter length (`--wavegan_kernel_len`) may improve results but will increase training time.
+
+### Monitoring
 
 To run a script that will dump a preview of fixed latent vectors at each checkpoint on the CPU
 
@@ -54,38 +76,46 @@ export CUDA_VISIBLE_DEVICES="-1"
 python train_wavegan.py preview ./train
 ```
 
-To run a (slow) script that will calculate inception score for the SC09 dataset at each checkpoint
+To back up checkpoints every hour (GAN training may occasionally collapse so it's good to have backups)
+
+```
+python backup.py ./train 60
+```
+
+To monitor training via tensorboard, use
+
+```
+tensorboard --logdir=./train
+```
+
+If you are training on the SC09 dataset, this command will (slowly) calculate inception score at each checkpoint
 
 ```
 export CUDA_VISIBLE_DEVICES="-1"
 python train_wavegan.py incept ./train
 ```
 
-To back up checkpoints every hour (GAN training will occasionally collapse)
+## Train a SpecGAN
+
+The primary focus of this repository is on WaveGAN, our raw audio generation method. For comparison, we also include an implementation of SpecGAN, an approach to generating audio by applying image-generating GANs on image-like audio spectrograms. This implementation only generates spectrograms of one second in length at 16khz.
+
+Before training a SpecGAN, we must first compute mean and variance of each spectrogram bin to use for normalization. This may take a while(you can also measure these statistics on a subset of the data)
 
 ```
-python backup.py ./train 60
-```
-
-### Train SpecGAN
-
-Compute dataset moments to use for normalization
-
-```
-export CUDA_VISIBLE_DEVICES="-1"
 python train_specgan.py moments ./train \
-	--data_dir ./data/customdataset \
+	--data_dir ./data/dir_with_mp3s \
 	--data_moments_fp ./train/moments.pkl
 ```
 
-
-To begin (or resume) training
+To begin (or resume) training on GPU:
 
 ```
 python train_specgan.py train ./train \
-	--data_dir ./data/customdataset \
+	--data_dir ./data/dir_with_mp3s \
 	--data_moments_fp ./train/moments.pkl
 ```
+
+### Monitoring
 
 To run a script that will dump a preview of fixed latent vectors at each checkpoint on the CPU
 
@@ -95,7 +125,19 @@ python train_specgan.py preview ./train \
 	--data_moments_fp ./train/moments.pkl
 ```
 
-To run a (slow) script that will calculate inception score for the SC09 dataset at each checkpoint
+To back up checkpoints every hour (GAN training will occasionally collapse)
+
+```
+python backup.py ./train 60
+```
+
+To monitor training via tensorboard, use
+
+```
+tensorboard --logdir=./train
+```
+
+If you are training on the SC09 dataset, this command will (slowly) calculate inception score at each checkpoint
 
 ```
 export CUDA_VISIBLE_DEVICES="-1"
@@ -103,15 +145,9 @@ python train_specgan.py incept ./train \
 	--data_moments_fp ./train/moments.pkl
 ```
 
-To back up checkpoints every hour (GAN training will occasionally collapse)
+## Generation
 
-```
-python backup.py ./train 60
-```
-
-### Generation
-
-The training scripts for both WaveGAN and SpecGAN create simple TensorFlow MetaGraphs for generating audio waveforms, located in the training directory. A simple usage is below; see [this Colab notebook](https://colab.research.google.com/drive/1e9o2NB2GDDjadptGr3rwQwTcw-IrFOnm) for additional features.
+The training scripts for both WaveGAN and SpecGAN create simple TensorFlow MetaGraphs for generating audio waveforms, located in the training directory. An example usage is below; see [this Colab notebook](https://colab.research.google.com/drive/1e9o2NB2GDDjadptGr3rwQwTcw-IrFOnm) for additional features.
 
 ```py
 import tensorflow as tf
@@ -136,32 +172,33 @@ _G_z = sess.run(G_z, {z: _z})
 display(Audio(_G_z[0], rate=16000))
 ```
 
-### Evaluation
+## Evaluation
 
-Our [paper](https://arxiv.org/abs/1802.04208) uses Inception score to (roughly) measure model performance. If you would like to compare to our reported numbers directly, you may run [this script](https://github.com/chrisdonahue/wavegan/blob/master/eval/inception/score.py) on a directory of 50,000 WAV files with 16384 samples each.
+Our [paper](https://arxiv.org/abs/1802.04208) uses Inception score to (roughly) measure model performance. If you plan to *directly* compare to our reported numbers, you should run [this script](https://github.com/chrisdonahue/wavegan/blob/master/eval/inception/score.py) on a directory of 50,000 16-bit PCM WAV files with 16384 samples each.
 
 ```
 python score.py --audio_dir wavs
 ```
 
-
-To reproduce our paper results (9.18 +- 0.04) for the SC09 ([download](http://deepyeti.ucsd.edu/cdonahue/sc09.tar.gz)) training dataset, run
+To reproduce our paper results (9.18 +- 0.04) for the SC09 ([download](http://deepyeti.ucsd.edu/cdonahue/wavegan/data/sc09.tar.gz)) training dataset, run
 
 ```
 python score.py --audio_dir sc09/train  --fix_length --n 18620
 ```
 
+## Web code
 
+Under `web`, we also include a JavaScript implementation of WaveGAN (generation only). Using this implementation, we created a [procedural drum machine](https://chrisdonahue.com/wavegan) powered by a WaveGAN trained on drum sound effects.
 
 ### Attribution
 
 If you use this code in your research, cite via the following BibTeX:
 
 ```
-@article{donahue2018wavegan,
-  title={Synthesizing Audio with Generative Adversarial Networks},
+@inproceedings{donahue2019wavegan,
+  title={Adversarial Audio Synthesis},
   author={Donahue, Chris and McAuley, Julian and Puckette, Miller},
-  journal={arXiv:1802.04208},
-  year={2018}
+  booktitle={ICLR},
+  year={2019}
 }
 ```
