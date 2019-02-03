@@ -151,17 +151,15 @@ To reproduce our paper results (9.18 +- 0.04) for the SC09 ([download](http://de
 python score.py --audio_dir sc09/train  --fix_length --n 18620
 ```
 
-
-
 ### Attribution
 
 If you use this code in your research, cite via the following BibTeX:
 
 ```
-@article{donahue2018wavegan,
-  title={Synthesizing Audio with Generative Adversarial Networks},
+@inproceedings{donahue2019wavegan,
+  title={Adversarial Audio Synthesis},
   author={Donahue, Chris and McAuley, Julian and Puckette, Miller},
-  journal={arXiv:1802.04208},
-  year={2018}
+  booktitle={ICLR},
+  year={2019}
 }
 ```
