@@ -134,7 +134,7 @@ def WaveGANGenerator(
 
   # Automatically update batchnorm moving averages every time G is used during training
   if train and use_batchnorm:
-    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope=tf.get_variable_scope())
+    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope=tf.get_variable_scope().name)
     if slice_len == 16384:
       assert len(update_ops) == 10
     else:
