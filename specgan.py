@@ -103,9 +103,8 @@ def SpecGANGenerator(
 
   # Automatically update batchnorm moving averages every time G is used during training
   if train and use_batchnorm:
-    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-    if len(update_ops) != 10:
-      raise Exception('Other update ops found in graph')
+    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope=tf.get_variable_scope().name)
+    assert len(update_ops) == 10
     with tf.control_dependencies(update_ops):
       output = tf.identity(output)
 

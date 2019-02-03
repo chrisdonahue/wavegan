@@ -1,24 +1,26 @@
 from __future__ import print_function
-import cPickle as pickle
+
+try:
+  import cPickle as pickle
+except:
+  import pickle
+from functools import reduce
 import os
 import time
 
 import numpy as np
 import tensorflow as tf
-
 from six.moves import xrange
 
 import loader
 from specgan import SpecGANGenerator, SpecGANDiscriminator
-from functools import reduce
 
 
 """
   Constants
 """
-_FS = 16000
-_WINDOW_LEN = 16384
-_D_Z = 100
+# TODO: Support different generation (slice) lengths in SpecGAN.
+_SLICE_LEN = 16384
 _CLIP_NSTD = 3.
 _LOG_EPS = 1e-6
 
@@ -44,7 +46,7 @@ def t_to_f(x, X_mean, X_std):
 
 
 """
-  Griffin-Lim
+  Griffin-Lim phase estimation from magnitude spectrum
 """
 def invert_spectra_griffin_lim(X_mag, nfft, nhop, ngl):
     X = tf.complex(X_mag, tf.zeros_like(X_mag))
@@ -61,7 +63,7 @@ def invert_spectra_griffin_lim(X_mag, nfft, nhop, ngl):
     _, X = tf.while_loop(c, b, [i, X], back_prop=False)
 
     x = tf.contrib.signal.inverse_stft(X, nfft, nhop)
-    x = x[:, :_WINDOW_LEN]
+    x = x[:, :_SLICE_LEN]
 
     return x
 
@@ -77,7 +79,7 @@ def f_to_t(X_norm, X_mean, X_std, ngl=16):
   X_mag = tf.exp(X_lmag)
 
   x = invert_spectra_griffin_lim(X_mag, 256, 128, ngl)
-  x = tf.reshape(x, [-1, _WINDOW_LEN, 1])
+  x = tf.reshape(x, [-1, _SLICE_LEN, 1])
 
   return x
 
@@ -101,11 +103,28 @@ def f_to_img(X_norm):
 """
 def train(fps, args):
   with tf.name_scope('loader'):
-    x_wav = loader.get_batch(fps, args.train_batch_size, _WINDOW_LEN, args.data_first_window)
+    x_wav = loader.decode_extract_and_batch(
+        fps,
+        batch_size=args.train_batch_size,
+        slice_len=_SLICE_LEN,
+        decode_fs=args.data_sample_rate,
+        decode_num_channels=1,
+        decode_fast_wav=args.data_fast_wav,
+        decode_parallel_calls=4,
+        slice_randomize_offset=False if args.data_first_slice else True,
+        slice_first_only=args.data_first_slice,
+        slice_overlap_ratio=0. if args.data_first_slice else args.data_overlap_ratio,
+        slice_pad_end=True if args.data_first_slice else args.data_pad_end,
+        repeat=True,
+        shuffle=True,
+        shuffle_buffer_size=4096,
+        prefetch_size=args.train_batch_size * 4,
+        prefetch_gpu_num=args.data_prefetch_gpu_num)[:, :, 0]
+
     x = t_to_f(x_wav, args.data_moments_mean, args.data_moments_std)
 
   # Make z vector
-  z = tf.random_uniform([args.train_batch_size, _D_Z], -1., 1., dtype=tf.float32)
+  z = tf.random_uniform([args.train_batch_size, args.specgan_latent_dim], -1., 1., dtype=tf.float32)
 
   # Make generator
   with tf.variable_scope('G'):
@@ -126,9 +145,9 @@ def train(fps, args):
   # Summarize
   x_gl = f_to_t(x, args.data_moments_mean, args.data_moments_std, args.specgan_ngl)
   G_z_gl = f_to_t(G_z, args.data_moments_mean, args.data_moments_std, args.specgan_ngl)
-  tf.summary.audio('x_wav', x_wav, _FS)
-  tf.summary.audio('x', x_gl, _FS)
-  tf.summary.audio('G_z', G_z_gl, _FS)
+  tf.summary.audio('x_wav', x_wav, args.data_sample_rate)
+  tf.summary.audio('x', x_gl, args.data_sample_rate)
+  tf.summary.audio('G_z', G_z_gl, args.data_sample_rate)
   G_z_rms = tf.sqrt(tf.reduce_mean(tf.square(G_z_gl[:, :, 0]), axis=1))
   x_rms = tf.sqrt(tf.reduce_mean(tf.square(x_gl[:, :, 0]), axis=1))
   tf.summary.histogram('x_rms_batch', x_rms)
@@ -310,10 +329,10 @@ def infer(args):
 
   # Subgraph that generates latent vectors
   samp_z_n = tf.placeholder(tf.int32, [], name='samp_z_n')
-  samp_z = tf.random_uniform([samp_z_n, _D_Z], -1.0, 1.0, dtype=tf.float32, name='samp_z')
+  samp_z = tf.random_uniform([samp_z_n, args.specgan_latent_dim], -1.0, 1.0, dtype=tf.float32, name='samp_z')
 
   # Input zo
-  z = tf.placeholder(tf.float32, [None, _D_Z], name='z')
+  z = tf.placeholder(tf.float32, [None, args.specgan_latent_dim], name='z')
   ngl = tf.placeholder(tf.int32, [], name='ngl')
   flat_pad = tf.placeholder(tf.int32, [], name='flat_pad')
 
@@ -399,7 +418,7 @@ def preview(args):
   feeds = {}
   feeds[graph.get_tensor_by_name('z:0')] = _zs
   feeds[graph.get_tensor_by_name('ngl:0')] = args.specgan_ngl
-  feeds[graph.get_tensor_by_name('flat_pad:0')] = _WINDOW_LEN // 2
+  feeds[graph.get_tensor_by_name('flat_pad:0')] = _SLICE_LEN // 2
   fetches =  {}
   fetches['step'] = tf.train.get_or_create_global_step()
   fetches['G_z'] = graph.get_tensor_by_name('G_z:0')
@@ -408,7 +427,7 @@ def preview(args):
   # Summarize
   G_z = graph.get_tensor_by_name('G_z_flat:0')
   summaries = [
-      tf.summary.audio('preview', tf.expand_dims(G_z, axis=0), _FS, max_outputs=1)
+      tf.summary.audio('preview', tf.expand_dims(G_z, axis=0), args.data_sample_rate, max_outputs=1)
   ]
   fetches['summaries'] = tf.summary.merge(summaries)
   summary_writer = tf.summary.FileWriter(preview_dir)
@@ -428,7 +447,7 @@ def preview(args):
         _step = _fetches['step']
 
       preview_fp = os.path.join(preview_dir, '{}.wav'.format(str(_step).zfill(8)))
-      wavwrite(preview_fp, _FS, _fetches['G_z_flat_int16'])
+      wavwrite(preview_fp, args.data_sample_rate, _fetches['G_z_flat_int16'])
 
       summary_writer.add_summary(_fetches['summaries'], _step)
 
@@ -552,9 +571,26 @@ def incept(args):
   Calculates and saves dataset moments
 """
 def moments(fps, args):
-  x = loader.get_batch(fps, 1, _WINDOW_LEN, args.data_first_window, repeat=False)[0, :, 0]
+  with tf.name_scope('loader'):
+    x_wav = loader.decode_extract_and_batch(
+        fps,
+        batch_size=1,
+        slice_len=_SLICE_LEN,
+        decode_fs=args.data_sample_rate,
+        decode_num_channels=1,
+        decode_fast_wav=args.data_fast_wav,
+        decode_parallel_calls=4,
+        slice_randomize_offset=False if args.data_first_slice else True,
+        slice_first_only=args.data_first_slice,
+        slice_overlap_ratio=0. if args.data_first_slice else args.data_overlap_ratio,
+        slice_pad_end=True if args.data_first_slice else args.data_pad_end,
+        repeat=False,
+        shuffle=False,
+        shuffle_buffer_size=0,
+        prefetch_size=4,
+        prefetch_gpu_num=args.data_prefetch_gpu_num)[0, :, 0, 0]
 
-  X = tf.contrib.signal.stft(x, 256, 128, pad_end=True)
+  X = tf.contrib.signal.stft(x_wav, 256, 128, pad_end=True)
   X_mag = tf.abs(X)
   X_lmag = tf.log(X_mag + _LOG_EPS)
 
@@ -589,12 +625,26 @@ if __name__ == '__main__':
   data_args = parser.add_argument_group('Data')
   data_args.add_argument('--data_dir', type=str,
       help='Data directory')
-  data_args.add_argument('--data_first_window', action='store_true', dest='data_first_window',
-      help='If set, only use the first window from each audio example')
   data_args.add_argument('--data_moments_fp', type=str,
       help='Dataset moments')
+  data_args.add_argument('--data_sample_rate', type=int,
+      help='Number of audio samples per second')
+  data_args.add_argument('--data_overlap_ratio', type=float,
+      help='Overlap ratio [0, 1) between slices')
+  data_args.add_argument('--data_first_slice', action='store_true', dest='data_first_slice',
+      help='If set, only use the first slice each audio example')
+  data_args.add_argument('--data_pad_end', action='store_true', dest='data_pad_end',
+      help='If set, use zero-padded partial slices from the end of each audio file')
+  data_args.add_argument('--data_normalize', action='store_true', dest='data_normalize',
+      help='If set, normalize the training examples')
+  data_args.add_argument('--data_fast_wav', action='store_true', dest='data_fast_wav',
+      help='If your data is comprised of standard WAV files (16-bit signed PCM or 32-bit float), use this flag to decode audio using scipy (faster) instead of librosa')
+  data_args.add_argument('--data_prefetch_gpu_num', type=int,
+      help='If nonnegative, prefetch examples to this GPU (Tensorflow device num)')
 
   specgan_args = parser.add_argument_group('SpecGAN')
+  specgan_args.add_argument('--specgan_latent_dim', type=int,
+      help='Number of dimensions of the latent space')
   specgan_args.add_argument('--specgan_kernel_len', type=int,
       help='Length of square 2D filter kernels')
   specgan_args.add_argument('--specgan_dim', type=int,
@@ -634,7 +684,15 @@ if __name__ == '__main__':
 
   parser.set_defaults(
     data_dir=None,
-    data_first_window=False,
+    data_moments_fp=None,
+    data_sample_rate=16000,
+    data_overlap_ratio=0.,
+    data_first_slice=False,
+    data_pad_end=False,
+    data_normalize=False,
+    data_fast_wav=False,
+    data_prefetch_gpu_num=0,
+    specgan_latent_dim=100,
     specgan_kernel_len=5,
     specgan_dim=64,
     specgan_batchnorm=False,
@@ -681,20 +739,14 @@ if __name__ == '__main__':
       'use_batchnorm': args.specgan_batchnorm
   })
 
-  # Assign appropriate split for mode
-  if args.mode == 'train' or args.mode == 'moments':
-    split = 'train'
-  else:
-    split = None
-
-  # Find fps for split
-  if split is not None:
-    fps = glob.glob(os.path.join(args.data_dir, split) + '*.tfrecord')
-
   if args.mode == 'train':
+    fps = glob.glob(os.path.join(args.data_dir, '*'))
+    print('Found {} audio files in specified directory'.format(len(fps)))
     infer(args)
     train(fps, args)
   elif args.mode == 'moments':
+    fps = glob.glob(os.path.join(args.data_dir, '*'))
+    print('Found {} audio files in specified directory'.format(len(fps)))
     moments(fps, args)
   elif args.mode == 'preview':
     preview(args)

@@ -1,5 +1,10 @@
 from __future__ import print_function
-import cPickle as pickle
+
+try:
+  import cPickle as pickle
+except:
+  import pickle
+from functools import reduce
 import os
 import time
 
@@ -9,15 +14,6 @@ from six.moves import xrange
 
 import loader
 from wavegan import WaveGANGenerator, WaveGANDiscriminator
-from functools import reduce
-
-
-"""
-  Constants
-"""
-_FS = 16000
-_WINDOW_LEN = 16384
-_D_Z = 100
 
 
 """
@@ -25,10 +21,26 @@ _D_Z = 100
 """
 def train(fps, args):
   with tf.name_scope('loader'):
-    x = loader.get_batch(fps, args.train_batch_size, _WINDOW_LEN, args.data_first_window)
+    x = loader.decode_extract_and_batch(
+        fps,
+        batch_size=args.train_batch_size,
+        slice_len=args.data_slice_len,
+        decode_fs=args.data_sample_rate,
+        decode_num_channels=args.data_num_channels,
+        decode_fast_wav=args.data_fast_wav,
+        decode_parallel_calls=4,
+        slice_randomize_offset=False if args.data_first_slice else True,
+        slice_first_only=args.data_first_slice,
+        slice_overlap_ratio=0. if args.data_first_slice else args.data_overlap_ratio,
+        slice_pad_end=True if args.data_first_slice else args.data_pad_end,
+        repeat=True,
+        shuffle=True,
+        shuffle_buffer_size=4096,
+        prefetch_size=args.train_batch_size * 4,
+        prefetch_gpu_num=args.data_prefetch_gpu_num)[:, :, 0]
 
   # Make z vector
-  z = tf.random_uniform([args.train_batch_size, _D_Z], -1., 1., dtype=tf.float32)
+  z = tf.random_uniform([args.train_batch_size, args.wavegan_latent_dim], -1., 1., dtype=tf.float32)
 
   # Make generator
   with tf.variable_scope('G'):
@@ -50,8 +62,8 @@ def train(fps, args):
   print('Total params: {} ({:.2f} MB)'.format(nparams, (float(nparams) * 4) / (1024 * 1024)))
 
   # Summarize
-  tf.summary.audio('x', x, _FS)
-  tf.summary.audio('G_z', G_z, _FS)
+  tf.summary.audio('x', x, args.data_sample_rate)
+  tf.summary.audio('G_z', G_z, args.data_sample_rate)
   G_z_rms = tf.sqrt(tf.reduce_mean(tf.square(G_z[:, :, 0]), axis=1))
   x_rms = tf.sqrt(tf.reduce_mean(tf.square(x[:, :, 0]), axis=1))
   tf.summary.histogram('x_rms_batch', x_rms)
@@ -199,11 +211,11 @@ def train(fps, args):
   Creates and saves a MetaGraphDef for simple inference
   Tensors:
     'samp_z_n' int32 []: Sample this many latent vectors
-    'samp_z' float32 [samp_z_n, 100]: Resultant latent vectors
-    'z:0' float32 [None, 100]: Input latent vectors
+    'samp_z' float32 [samp_z_n, latent_dim]: Resultant latent vectors
+    'z:0' float32 [None, latent_dim]: Input latent vectors
     'flat_pad:0' int32 []: Number of padding samples to use when flattening batch to a single audio file
-    'G_z:0' float32 [None, 16384, 1]: Generated outputs
-    'G_z_int16:0' int16 [None, 16384, 1]: Same as above but quantizied to 16-bit PCM samples
+    'G_z:0' float32 [None, slice_len, 1]: Generated outputs
+    'G_z_int16:0' int16 [None, slice_len, 1]: Same as above but quantizied to 16-bit PCM samples
     'G_z_flat:0' float32 [None, 1]: Outputs flattened into single audio file
     'G_z_flat_int16:0' int16 [None, 1]: Same as above but quantized to 16-bit PCM samples
   Example usage:
@@ -228,10 +240,10 @@ def infer(args):
 
   # Subgraph that generates latent vectors
   samp_z_n = tf.placeholder(tf.int32, [], name='samp_z_n')
-  samp_z = tf.random_uniform([samp_z_n, _D_Z], -1.0, 1.0, dtype=tf.float32, name='samp_z')
+  samp_z = tf.random_uniform([samp_z_n, args.wavegan_latent_dim], -1.0, 1.0, dtype=tf.float32, name='samp_z')
 
   # Input zo
-  z = tf.placeholder(tf.float32, [None, _D_Z], name='z')
+  z = tf.placeholder(tf.float32, [None, args.wavegan_latent_dim], name='z')
   flat_pad = tf.placeholder(tf.int32, [], name='flat_pad')
 
   # Execute generator
@@ -316,7 +328,7 @@ def preview(args):
   # Set up graph for generating preview images
   feeds = {}
   feeds[graph.get_tensor_by_name('z:0')] = _zs
-  feeds[graph.get_tensor_by_name('flat_pad:0')] = _WINDOW_LEN // 2
+  feeds[graph.get_tensor_by_name('flat_pad:0')] = int(args.data_sample_rate / 2)
   fetches = {}
   fetches['step'] = tf.train.get_or_create_global_step()
   fetches['G_z'] = graph.get_tensor_by_name('G_z:0')
@@ -327,7 +339,7 @@ def preview(args):
   # Summarize
   G_z = graph.get_tensor_by_name('G_z_flat:0')
   summaries = [
-      tf.summary.audio('preview', tf.expand_dims(G_z, axis=0), _FS, max_outputs=1)
+      tf.summary.audio('preview', tf.expand_dims(G_z, axis=0), args.data_sample_rate, max_outputs=1)
   ]
   fetches['summaries'] = tf.summary.merge(summaries)
   summary_writer = tf.summary.FileWriter(preview_dir)
@@ -354,7 +366,7 @@ def preview(args):
         _step = _fetches['step']
 
       preview_fp = os.path.join(preview_dir, '{}.wav'.format(str(_step).zfill(8)))
-      wavwrite(preview_fp, _FS, _fetches['G_z_flat_int16'])
+      wavwrite(preview_fp, args.data_sample_rate, _fetches['G_z_flat_int16'])
 
       summary_writer.add_summary(_fetches['summaries'], _step)
 
@@ -511,11 +523,29 @@ if __name__ == '__main__':
 
   data_args = parser.add_argument_group('Data')
   data_args.add_argument('--data_dir', type=str,
-      help='Data directory')
-  data_args.add_argument('--data_first_window', action='store_true', dest='data_first_window',
-      help='If set, only use the first window from each audio example')
+      help='Data directory containing *only* audio files to load')
+  data_args.add_argument('--data_sample_rate', type=int,
+      help='Number of audio samples per second')
+  data_args.add_argument('--data_slice_len', type=int, choices=[16384, 32768, 65536],
+      help='Number of audio samples per slice (maximum generation length)')
+  data_args.add_argument('--data_num_channels', type=int,
+      help='Number of audio channels to generate (for >2, must match that of data)')
+  data_args.add_argument('--data_overlap_ratio', type=float,
+      help='Overlap ratio [0, 1) between slices')
+  data_args.add_argument('--data_first_slice', action='store_true', dest='data_first_slice',
+      help='If set, only use the first slice each audio example')
+  data_args.add_argument('--data_pad_end', action='store_true', dest='data_pad_end',
+      help='If set, use zero-padded partial slices from the end of each audio file')
+  data_args.add_argument('--data_normalize', action='store_true', dest='data_normalize',
+      help='If set, normalize the training examples')
+  data_args.add_argument('--data_fast_wav', action='store_true', dest='data_fast_wav',
+      help='If your data is comprised of standard WAV files (16-bit signed PCM or 32-bit float), use this flag to decode audio using scipy (faster) instead of librosa')
+  data_args.add_argument('--data_prefetch_gpu_num', type=int,
+      help='If nonnegative, prefetch examples to this GPU (Tensorflow device num)')
 
   wavegan_args = parser.add_argument_group('WaveGAN')
+  wavegan_args.add_argument('--wavegan_latent_dim', type=int,
+      help='Number of dimensions of the latent space')
   wavegan_args.add_argument('--wavegan_kernel_len', type=int,
       help='Length of 1D filter kernels')
   wavegan_args.add_argument('--wavegan_dim', type=int,
@@ -526,7 +556,7 @@ if __name__ == '__main__':
       help='Number of discriminator updates per generator update')
   wavegan_args.add_argument('--wavegan_loss', type=str, choices=['dcgan', 'lsgan', 'wgan', 'wgan-gp'],
       help='Which GAN loss to use')
-  wavegan_args.add_argument('--wavegan_genr_upsample', type=str, choices=['zeros', 'nn', 'lin', 'cub'],
+  wavegan_args.add_argument('--wavegan_genr_upsample', type=str, choices=['zeros', 'nn'],
       help='Generator upsample strategy')
   wavegan_args.add_argument('--wavegan_genr_pp', action='store_true', dest='wavegan_genr_pp',
       help='If set, use post-processing filter')
@@ -559,7 +589,16 @@ if __name__ == '__main__':
 
   parser.set_defaults(
     data_dir=None,
-    data_first_window=False,
+    data_sample_rate=16000,
+    data_slice_len=16384,
+    data_num_channels=1,
+    data_overlap_ratio=0.,
+    data_first_slice=False,
+    data_pad_end=False,
+    data_normalize=False,
+    data_fast_wav=False,
+    data_prefetch_gpu_num=0,
+    wavegan_latent_dim=100,
     wavegan_kernel_len=25,
     wavegan_dim=64,
     wavegan_batchnorm=False,
@@ -590,29 +629,23 @@ if __name__ == '__main__':
 
   # Make model kwarg dicts
   setattr(args, 'wavegan_g_kwargs', {
-      'kernel_len': args.wavegan_kernel_len,
-      'dim': args.wavegan_dim,
-      'use_batchnorm': args.wavegan_batchnorm,
-      'upsample': args.wavegan_genr_upsample
+    'slice_len': args.data_slice_len,
+    'nch': args.data_num_channels,
+    'kernel_len': args.wavegan_kernel_len,
+    'dim': args.wavegan_dim,
+    'use_batchnorm': args.wavegan_batchnorm,
+    'upsample': args.wavegan_genr_upsample
   })
   setattr(args, 'wavegan_d_kwargs', {
-      'kernel_len': args.wavegan_kernel_len,
-      'dim': args.wavegan_dim,
-      'use_batchnorm': args.wavegan_batchnorm,
-      'phaseshuffle_rad': args.wavegan_disc_phaseshuffle
+    'kernel_len': args.wavegan_kernel_len,
+    'dim': args.wavegan_dim,
+    'use_batchnorm': args.wavegan_batchnorm,
+    'phaseshuffle_rad': args.wavegan_disc_phaseshuffle
   })
 
-  # Assign appropriate split for mode
   if args.mode == 'train':
-    split = 'train'
-  else:
-    split = None
-
-  # Find fps for split
-  if split is not None:
-    fps = glob.glob(os.path.join(args.data_dir, split) + '*.tfrecord')
-
-  if args.mode == 'train':
+    fps = glob.glob(os.path.join(args.data_dir, '*'))
+    print('Found {} audio files in specified directory'.format(len(fps)))
     infer(args)
     train(fps, args)
   elif args.mode == 'preview':
