@@ -169,7 +169,7 @@ G_z = graph.get_tensor_by_name('G_z:0')
 _G_z = sess.run(G_z, {z: _z})
 
 # Play audio in notebook
-display(Audio(_G_z[0], rate=16000))
+display(Audio(_G_z[0, :, 0], rate=16000))
 ```
 
 ## Evaluation
