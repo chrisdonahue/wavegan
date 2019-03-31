@@ -280,6 +280,8 @@ def train(fps, args):
       checkpoint_dir=args.train_dir,
       save_checkpoint_secs=args.train_save_secs,
       save_summaries_secs=args.train_summary_secs) as sess:
+    print('-' * 80)
+    print('Training has started. Please use \'tensorboard --logdir={}\' to monitor.'.format(args.train_dir))
     while True:
       # Train discriminator
       for i in xrange(args.specgan_disc_nupdates):
@@ -741,6 +743,8 @@ if __name__ == '__main__':
 
   if args.mode == 'train':
     fps = glob.glob(os.path.join(args.data_dir, '*'))
+    if len(fps) == 0:
+      raise Exception('Did not find any audio files in specified directory')
     print('Found {} audio files in specified directory'.format(len(fps)))
     infer(args)
     train(fps, args)
