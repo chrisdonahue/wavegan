@@ -718,8 +718,10 @@ if __name__ == '__main__':
     os.makedirs(args.train_dir)
 
   # Save args
-  with open(os.path.join(args.train_dir, 'args.txt'), 'w') as f:
-    f.write('\n'.join([str(k) + ',' + str(v) for k, v in sorted(vars(args).items(), key=lambda x: x[0])]))
+  with open(os.path.join(args.train_dir, 'args_%s.txt' % args.mode), 'a') as f:
+    f.write('START_TIME,"%s"\n' % time.asctime(time.localtime()))
+    f.write(''.join(['%s,%s\n' % (k, v) for k, v in
+                     sorted(vars(args).items(), key=lambda x: x[0])]) + '\n')
 
   # Load moments
   if args.mode != 'moments' and args.data_moments_fp is not None:
