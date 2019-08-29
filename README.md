@@ -39,13 +39,26 @@ WaveGAN can now be trained on datasets of arbitrary audio files (previously requ
 
 ## Train a WaveGAN
 
-To begin (or resume) training on GPU:
+Here is how you would begin (or resume) training a WaveGAN on random clips from a directory containing longer audio, i.e., more than a few seconds per file:
 
 ```
 export CUDA_VISIBLE_DEVICES="0"
 python train_wavegan.py train ./train \
-	--data_dir ./data/dir_with_mp3s \
+	--data_dir ./data/dir_with_longer_audio_files
 ```
+
+If you are instead training on datasets of short sound effects (e.g., SC09 or drum sound effects), you want to use this command:
+
+```
+export CUDA_VISIBLE_DEVICES="0"
+python train_wavegan.py train ./train \
+	--data_dir ./data/sc09/train \
+	--data_first_slice \
+	--data_pad_end \
+	--data_fast_wav
+```
+
+Because our codebase buffers audio clips directly from files, it is important to change the data-related command line arguments to be appropriate for your dataset (see [#data-considerations](data considerations below)).
 
 We currently do not support training on multiple GPUs. If your machine has multiple GPUs, make sure to set the `CUDA_VISIBLE_DEVICES` flag as shown above.
 
@@ -53,7 +66,7 @@ While you can *technically* train a WaveGAN on CPU, it is prohibitively slow and
 
 ### Data considerations
 
-The above training command is appropriate for extracting training slices from e.g. a folder consisting of music MP3s. If you instead have e.g. a folder consisting of individual drum sound effects, use the flag `--data_first_slice` to only extract the first slice from each audio file.
+The WaveGAN training script is configured out-of-the-box to be appropriate for training on random slices from a directory containing longer audio files (e.g., songs, a common use case). If you want to train WaveGAN on shorter sound effects, you will almost likely want to use the flag `--data_first_slice` to only extract the first slice from each audio file. If your clips are extremely short (i.e., less than $16384$ samples each as in SC09), you will want to add `--data_pad_end` so that they get zero padded to fill the slice.
 
 If your dataset consists exclusively of "standard" WAV files (16-bit signed PCM or 32-bit float), you can use the flag `--data_fast_wav` which will use `scipy` (faster) to decode your audio instead of `librosa`. This may slightly increase training speed.
 
