@@ -33,9 +33,9 @@ pip install librosa==0.6.2
 
 WaveGAN can now be trained on datasets of arbitrary audio files (previously required preprocessing). You can use any folder containing audio, but here are a few example datasets to help you get started:
 
-- [Speech Commands Zero through Nine (SC09)](http://deepyeti.ucsd.edu/cdonahue/wavegan/data/sc09.tar.gz)
-- [Drum sound effects](http://deepyeti.ucsd.edu/cdonahue/wavegan/data/drums.tar.gz)
-- [Bach piano performances](http://deepyeti.ucsd.edu/cdonahue/wavegan/data/mancini_piano.tar.gz)
+- [Speech Commands Zero through Nine (SC09)](https://drive.google.com/file/d/1WmlNdi_lMH13d08_0GymNcTpWBKo4MYn/view?usp=sharing)
+- [Drum sound effects](https://drive.google.com/file/d/1552QqU_MYCaxHK71psNisG4-w9VpUEli/view?usp=sharing)
+- [Bach piano performances](https://drive.google.com/file/d/1DPGRm1Di-ITAcFnmQtnr5nw-BnMzwb6y/view?usp=sharing)
 
 ## Train a WaveGAN
 
