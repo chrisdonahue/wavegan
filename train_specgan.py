@@ -718,7 +718,7 @@ if __name__ == '__main__':
     os.makedirs(args.train_dir)
 
   # Save args
-  with open(os.path.join(args.train_dir, 'args.txt'), 'w') as f:
+  with open(os.path.join(args.train_dir, 'args_%s.txt' % args.mode), 'w') as f:
     f.write('\n'.join([str(k) + ',' + str(v) for k, v in sorted(vars(args).items(), key=lambda x: x[0])]))
 
   # Load moments
